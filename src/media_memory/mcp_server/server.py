@@ -37,5 +37,7 @@ class MediaMemoryMCPServer:
             "get_scene_context": self.get_scene_context,
         }
         if tool_name not in dispatch:
-            raise ValueError(f"Unknown tool: {tool_name}")
+            raise ValueError(
+                f"Unknown tool: {tool_name}. Available tools: {', '.join(sorted(dispatch))}"
+            )
         return dispatch[tool_name](**kwargs)

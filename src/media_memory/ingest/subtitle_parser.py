@@ -46,6 +46,8 @@ def _parse_srt(text: str, media_path: str, subtitle_path: str, season: int | Non
         left, right = [part.strip() for part in ts_line.split("-->", maxsplit=1)]
         start = _parse_srt_time(left)
         end = _parse_srt_time(right)
+        if start is None or end is None:
+            continue
         content_lines = lines[2:] if lines[0].isdigit() else lines[1:]
         content = normalize_text(" ".join(content_lines))
         if not content:
@@ -76,6 +78,9 @@ def _parse_vtt(text: str, media_path: str, subtitle_path: str, season: int | Non
         left, right = [part.strip() for part in line.split("-->", maxsplit=1)]
         start = _parse_srt_time(left)
         end = _parse_srt_time(right)
+        if start is None or end is None:
+            idx += 1
+            continue
         idx += 1
         content_lines: list[str] = []
         while idx < len(lines) and lines[idx].strip():
@@ -108,6 +113,8 @@ def _parse_ass(text: str, media_path: str, subtitle_path: str, season: int | Non
             continue
         start = _parse_ass_time(parts[1].strip())
         end = _parse_ass_time(parts[2].strip())
+        if start is None or end is None:
+            continue
         content = normalize_text(parts[9])
         if not content:
             continue
