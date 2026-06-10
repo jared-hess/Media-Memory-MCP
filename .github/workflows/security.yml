@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Scan filesystem and configuration
-        uses: aquasecurity/trivy-action@v0.30.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -33,7 +33,7 @@ jobs:
         run: docker build -t media-memory-mcp:trivy .
 
       - name: Scan local image
-        uses: aquasecurity/trivy-action@v0.30.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: media-memory-mcp:trivy
           severity: HIGH,CRITICAL
