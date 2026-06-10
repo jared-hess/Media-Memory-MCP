@@ -11,6 +11,7 @@ class MetadataSource(Protocol):
 
     def enrich(self, _item: MediaItem, /) -> MediaItem:
         """Return an enriched copy of a media item."""
+        ...
 
 
 class DisabledMetadataSource:

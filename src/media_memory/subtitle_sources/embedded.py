@@ -140,11 +140,12 @@ class EmbeddedSubtitleSource:
         stream_index = int(stream.get("index", -1))
         if stream_index < 0:
             raise ProviderError("ffprobe returned a subtitle stream without an index.")
-        tags = stream.get("tags") if isinstance(stream.get("tags"), Mapping) else {}
+        raw_tags = stream.get("tags")
+        tags = raw_tags if isinstance(raw_tags, Mapping) else {}
         language = _optional_string(tags.get("language"))
         title = _optional_string(tags.get("title"))
         target_path = self._cache_path(item.path, stream_index, language)
-        raw = {
+        raw: dict[str, object] = {
             PROVIDER_NAME: {
                 "media_path": str(item.path),
                 "stream_index": stream_index,

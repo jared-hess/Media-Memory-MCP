@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Sequence
 from pathlib import Path
+from typing import Protocol
 
 from media_memory.core.db import MediaMemoryDB
 from media_memory.core.embeddings import EmbeddingProvider
@@ -16,6 +18,14 @@ from media_memory.subtitles.normalize import normalize_text
 from media_memory.subtitles.parse import parse_subtitle_file
 
 
+class MetadataDocumentSource(Protocol):
+    """Metadata source that can provide indexable documents for a media item."""
+
+    def find_documents(self, item: MediaItem) -> list[MetadataDocument]:
+        """Return metadata documents derived from a media item."""
+        ...
+
+
 class IngestPipeline:
     """Resumable local ingest pipeline with per-target failure isolation."""
 
@@ -26,7 +36,7 @@ class IngestPipeline:
         vectors: VectorStore,
         *,
         subtitle_source: LocalSubtitleSource | None = None,
-        metadata_sources: list[FilenameMetadataSource] | None = None,
+        metadata_sources: Sequence[MetadataDocumentSource] | None = None,
     ) -> None:
         self.db = db
         self.embeddings = embeddings
@@ -34,7 +44,7 @@ class IngestPipeline:
         self.subtitle_source = subtitle_source or LocalSubtitleSource()
         self.metadata_sources = metadata_sources or [FilenameMetadataSource()]
 
-    def ingest_media_items(self, items: list[MediaItem]) -> dict[str, int]:
+    def ingest_media_items(self, items: Sequence[MediaItem]) -> dict[str, int]:
         stats = {
             "media_items": 0,
             "documents": 0,

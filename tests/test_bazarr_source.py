@@ -54,8 +54,10 @@ def test_bazarr_filesystem_mode_discovers_sidecar_without_api_calls(tmp_path: Pa
     assert fetched_path == subtitle_path
     assert candidates[0].provider == "bazarr"
     assert candidates[0].language == "en"
-    assert candidates[0].raw["bazarr"]["mode"] == "sidecar"
-    assert candidates[0].raw["bazarr"]["provenance"] == "bazarr-filesystem-subtitle"
+    raw = candidates[0].raw["bazarr"]
+    assert isinstance(raw, dict)
+    assert raw["mode"] == "sidecar"
+    assert raw["provenance"] == "bazarr-filesystem-subtitle"
     assert client.calls == 0
 
 
@@ -73,7 +75,9 @@ def test_bazarr_filesystem_mode_discovers_configured_export_root(tmp_path: Path)
     candidates = source.find(MediaItem(title="Movie", path=media_path, kind="movie"))
 
     assert [candidate.path for candidate in candidates] == [subtitle_path]
-    assert candidates[0].raw["bazarr"]["mode"] == "root"
+    raw = candidates[0].raw["bazarr"]
+    assert isinstance(raw, dict)
+    assert raw["mode"] == "root"
 
 
 def test_bazarr_api_mode_requires_explicit_client_after_filesystem_lookup(tmp_path: Path) -> None:

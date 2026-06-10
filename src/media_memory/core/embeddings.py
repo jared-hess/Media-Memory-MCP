@@ -55,12 +55,17 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
     def embed_texts(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
-        kwargs: dict[str, object] = {
-            "input": texts,
-            "model": self.MODEL,
-            "encoding_format": "float",
-        }
         if self.dimensions:
-            kwargs["dimensions"] = self.dimensions
-        response = self.client.embeddings.create(**kwargs)
+            response = self.client.embeddings.create(
+                input=texts,
+                model=self.MODEL,
+                encoding_format="float",
+                dimensions=self.dimensions,
+            )
+        else:
+            response = self.client.embeddings.create(
+                input=texts,
+                model=self.MODEL,
+                encoding_format="float",
+            )
         return [list(item.embedding) for item in response.data]

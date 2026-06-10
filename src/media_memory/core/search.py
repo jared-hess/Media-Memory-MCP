@@ -150,7 +150,16 @@ class SearchService:
     ) -> list[dict[str, object]]:
         """Search dialogue with timestamped subtitle evidence."""
 
-        return self.find_scene(query=query, limit=limit, filters=filters, **filter_values)
+        media_path = filter_values.pop("media_path", None)
+        if media_path is not None and not isinstance(media_path, str):
+            media_path = str(media_path)
+        return self.find_scene(
+            query=query,
+            media_path=media_path,
+            limit=limit,
+            filters=filters,
+            **filter_values,
+        )
 
     def get_media(
         self,

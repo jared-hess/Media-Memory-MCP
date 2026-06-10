@@ -17,6 +17,7 @@ class BazarrClient(Protocol):
 
     def find(self, item: MediaItem) -> list[SubtitleCandidate]:
         """Return API-backed subtitle candidates for a media item."""
+        ...
 
 
 class BazarrSubtitleSource:

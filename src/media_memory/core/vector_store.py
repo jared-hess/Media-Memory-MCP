@@ -75,8 +75,14 @@ class LanceVectorStore(VectorStore):
         rows = table.search(vector).limit(limit).to_list()
         results: list[tuple[int, float]] = []
         for row in rows:
-            distance = float(row.get("_distance", 0.0))
-            results.append((int(row["chunk_id"]), 1.0 / (1.0 + distance)))
+            distance_value = row.get("_distance", 0.0)
+            distance = (
+                float(distance_value) if isinstance(distance_value, (int, float, str)) else 0.0
+            )
+            chunk_id = row.get("chunk_id")
+            if not isinstance(chunk_id, (int, str)):
+                continue
+            results.append((int(chunk_id), 1.0 / (1.0 + distance)))
         return results
 
     def rebuild_from_chunks(self, db: MediaMemoryDB, embeddings: EmbeddingProvider) -> int:
@@ -137,6 +143,8 @@ class LanceDBVectorStore(LanceVectorStore):
 
 def _optional_float(value: object) -> float | None:
     if value is None:
+        return None
+    if not isinstance(value, (int, float, str)):
         return None
     return float(value)
 

@@ -22,12 +22,15 @@ class OpenSubtitlesClient(Protocol):
 
     def authenticate(self, *, api_key: str, username: str, password: str) -> str:
         """Return an authenticated bearer token."""
+        ...
 
     def search(self, *, token: str, params: Mapping[str, object]) -> list[Mapping[str, Any]]:
         """Return raw subtitle search results."""
+        ...
 
     def download(self, *, token: str, file_id: str) -> bytes:
         """Return subtitle bytes for an OpenSubtitles file identifier."""
+        ...
 
 
 @dataclass(frozen=True)

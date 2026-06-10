@@ -96,7 +96,11 @@ class FTSSearchTests(unittest.TestCase):
             self.assertEqual(3000, rows[0]["end_ms"])
             self.assertGreater(rows[0]["lexical_score"], 0.0)
 
-            self.assertEqual(chunk_id, db.get_chunk_by_id(int(chunk_id))["chunk_id"])
+            assert chunk_id is not None
+            stored_chunk = db.get_chunk_by_id(int(chunk_id))
+            self.assertIsNotNone(stored_chunk)
+            assert stored_chunk is not None
+            self.assertEqual(chunk_id, stored_chunk["chunk_id"])
             self.assertEqual(
                 chunk_id, db.list_chunks_for_media("/media/Show.S01E01.mkv")[0]["chunk_id"]
             )
@@ -250,8 +254,12 @@ class FTSSearchTests(unittest.TestCase):
             episodes = search.find_episode("project blue")
             scenes = search.search_dialogue("project blue")
 
-            self.assertEqual("summary", episodes[0].evidences[0].subtitle_path.split(".")[-2])
-            self.assertEqual(5000, scenes[0]["evidence"]["start_ms"])
+            subtitle_path = episodes[0].evidences[0].subtitle_path
+            assert subtitle_path is not None
+            self.assertEqual("summary", subtitle_path.split(".")[-2])
+            evidence = scenes[0]["evidence"]
+            assert isinstance(evidence, dict)
+            self.assertEqual(5000, evidence["start_ms"])
             self.assertIn("query", scenes[0])
             self.assertIn("results", scenes[0])
             self.assertIn("confidence", scenes[0])

@@ -131,7 +131,9 @@ class ResultRankingTests(unittest.TestCase):
 
             results = SearchService(db).search_dialogue("open the pod bay doors", limit=2)
 
-            self.assertEqual("/media/dialogue.mkv", results[0]["media"]["path"])
+            media = results[0]["media"]
+            assert isinstance(media, dict)
+            self.assertEqual("/media/dialogue.mkv", media["path"])
             self.assertIn("subtitle source", str(results[0]["why"]))
             self.assertIn("timestamp metadata", str(results[0]["why"]))
             db.close()

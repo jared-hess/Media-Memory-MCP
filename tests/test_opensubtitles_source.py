@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 import hashlib
 from pathlib import Path
 from typing import Any
@@ -15,7 +16,9 @@ class FakeOpenSubtitlesClient:
     def __init__(
         self, search_results: list[dict[str, Any]] | None = None, content: bytes | None = None
     ) -> None:
-        self.search_results = search_results or []
+        self.search_results: list[Mapping[str, Any]] = (
+            [result for result in search_results] if search_results is not None else []
+        )
         self.content = content or b"1\n00:00:01,000 --> 00:00:02,000\nHello from cache.\n"
         self.auth_calls: list[dict[str, str]] = []
         self.search_calls: list[dict[str, object]] = []
@@ -25,7 +28,7 @@ class FakeOpenSubtitlesClient:
         self.auth_calls.append({"api_key": api_key, "username": username, "password": password})
         return "token"
 
-    def search(self, *, token: str, params: dict[str, object]) -> list[dict[str, Any]]:
+    def search(self, *, token: str, params: Mapping[str, object]) -> list[Mapping[str, Any]]:
         assert token == "token"
         self.search_calls.append(dict(params))
         return self.search_results
@@ -45,7 +48,7 @@ class FailingOpenSubtitlesClient:
         self.calls += 1
         raise AssertionError("Disabled OpenSubtitles should not authenticate")
 
-    def search(self, *, token: str, params: dict[str, object]) -> list[dict[str, Any]]:
+    def search(self, *, token: str, params: Mapping[str, object]) -> list[Mapping[str, Any]]:
         del token, params
         self.calls += 1
         raise AssertionError("Disabled OpenSubtitles should not search")

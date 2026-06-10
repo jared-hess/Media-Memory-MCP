@@ -25,6 +25,8 @@ class SubtitleSource(Protocol):
 
     def find(self, _item: MediaItem, /) -> Iterable[Path | SubtitleCandidate | ProviderCandidate]:
         """Return subtitle candidates for a media item."""
+        ...
 
     def fetch(self, _candidate: Path | SubtitleCandidate | ProviderCandidate, /) -> Path:
         """Resolve a subtitle candidate to a local readable file."""
+        ...

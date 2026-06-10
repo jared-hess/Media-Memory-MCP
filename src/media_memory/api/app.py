@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs
@@ -108,7 +108,7 @@ async def _read_json(receive: Receive) -> dict[str, Any]:
     return value
 
 
-async def _send_json(send: Send, status_code: int, payload: dict[str, object]) -> None:
+async def _send_json(send: Send, status_code: int, payload: Mapping[str, object]) -> None:
     body = json.dumps(payload, sort_keys=True).encode("utf-8")
     await send(
         {

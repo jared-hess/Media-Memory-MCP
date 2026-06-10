@@ -31,10 +31,18 @@ def test_search_media_tool_matches_core_search_result_shape(tmp_path: Path) -> N
             item.to_dict() for item in services.search.search_media("winter coming", limit=5)
         ]
 
-        assert tool_payload["results"] == core_payload
-        assert tool_payload["results"][0]["evidences"][0]["chunk_id"] == chunk_id
-        assert "confidence" in tool_payload["results"][0]
-        assert "why" in tool_payload["results"][0]
+        results = tool_payload["results"]
+        assert isinstance(results, list)
+        first = results[0]
+        assert isinstance(first, dict)
+        evidences = first["evidences"]
+        assert isinstance(evidences, list)
+        first_evidence = evidences[0]
+        assert isinstance(first_evidence, dict)
+        assert results == core_payload
+        assert first_evidence["chunk_id"] == chunk_id
+        assert "confidence" in first
+        assert "why" in first
     finally:
         services.close()
 
@@ -50,10 +58,19 @@ def test_search_dialogue_returns_timestamped_evidence(tmp_path: Path) -> None:
 
     assert payload["query"] == "winter coming"
     assert payload["results"]
-    first = payload["results"][0]
-    assert first["evidence"]["start_ms"] == 1000
-    assert first["evidence"]["end_ms"] == 3000
-    assert first["results"][0]["text"] == "Winter is coming."
+    results = payload["results"]
+    assert isinstance(results, list)
+    first = results[0]
+    assert isinstance(first, dict)
+    evidence = first["evidence"]
+    nested_results = first["results"]
+    assert isinstance(evidence, dict)
+    assert isinstance(nested_results, list)
+    nested_first = nested_results[0]
+    assert isinstance(nested_first, dict)
+    assert evidence["start_ms"] == 1000
+    assert evidence["end_ms"] == 3000
+    assert nested_first["text"] == "Winter is coming."
 
 
 def test_fastmcp_tool_registration_hides_ingest_by_default(tmp_path: Path) -> None:
@@ -93,10 +110,19 @@ def test_media_resources_return_read_only_shapes(tmp_path: Path) -> None:
     finally:
         services.close()
 
-    assert show["results"][0]["title"] == "Example Show S01E01"
-    assert episode["result"]["season_number"] == 1
-    assert movie["result"]["year"] == 1984
-    assert status["counts"]["media_items"] == 2
+    show_results = show["results"]
+    episode_result = episode["result"]
+    movie_result = movie["result"]
+    counts = status["counts"]
+    assert isinstance(show_results, list)
+    assert isinstance(show_results[0], dict)
+    assert isinstance(episode_result, dict)
+    assert isinstance(movie_result, dict)
+    assert isinstance(counts, dict)
+    assert show_results[0]["title"] == "Example Show S01E01"
+    assert episode_result["season_number"] == 1
+    assert movie_result["year"] == 1984
+    assert counts["media_items"] == 2
     assert status["allow_ingest_tools"] is False
 
 

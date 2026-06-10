@@ -31,6 +31,7 @@ class SceneContextTests(unittest.TestCase):
                     text_hash=f"hash-{index}",
                 )
                 self.assertIsNotNone(chunk_id)
+                assert chunk_id is not None
                 chunk_ids.append(int(chunk_id))
             search = SearchService(db)
 
@@ -38,15 +39,21 @@ class SceneContextTests(unittest.TestCase):
 
             self.assertIsNotNone(context)
             assert context is not None
-            self.assertEqual(
-                ["before one", "before two"], [item["text"] for item in context["before"]]
-            )
-            self.assertEqual("target line", context["current"]["text"])
-            self.assertEqual(
-                ["after one", "after two"], [item["text"] for item in context["after"]]
-            )
-            self.assertEqual(5, len(context["evidence"]))
-            self.assertIn("target line", context["context"])
+            before = context["before"]
+            current = context["current"]
+            after = context["after"]
+            evidence = context["evidence"]
+            context_text = context["context"]
+            assert isinstance(before, list)
+            assert isinstance(current, dict)
+            assert isinstance(after, list)
+            assert isinstance(evidence, list)
+            assert isinstance(context_text, str)
+            self.assertEqual(["before one", "before two"], [item["text"] for item in before])
+            self.assertEqual("target line", current["text"])
+            self.assertEqual(["after one", "after two"], [item["text"] for item in after])
+            self.assertEqual(5, len(evidence))
+            self.assertIn("target line", context_text)
             db.close()
 
 

@@ -5,7 +5,7 @@ from pathlib import Path
 
 from media_memory.core.db import MediaMemoryDB
 from media_memory.core.embeddings import MockEmbeddingProvider
-from media_memory.core.models import MediaItem
+from media_memory.core.models import MediaItem, ProviderRef
 from media_memory.core.vector_store import LanceDBVectorStore
 from media_memory.ingest.pipeline import IngestPipeline
 from media_memory.media_sources.plex import PlexMediaSource
@@ -156,12 +156,12 @@ def test_plex_metadata_source_uses_already_fetched_item_data() -> None:
         runtime_seconds=1380,
         provider_ids={"plex_rating_key": "200"},
         provider_refs=[
-            {
-                "provider": "plex",
-                "id": "200",
-                "namespace": "rating-key",
-                "raw": {"summary": "George saves a whale.", "rating": "8.9"},
-            }
+            ProviderRef(
+                provider="plex",
+                id="200",
+                namespace="rating-key",
+                raw={"summary": "George saves a whale.", "rating": "8.9"},
+            )
         ],
     )
 

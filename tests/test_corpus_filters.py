@@ -47,8 +47,12 @@ def test_mcp_search_payload_respects_configured_corpus_id(tmp_path: Path) -> Non
         local_services.close()
         remote_services.close()
 
-    local_titles = [result["title"] for result in local_payload["results"]]
-    remote_titles = [result["title"] for result in remote_payload["results"]]
+    local_results = local_payload["results"]
+    remote_results = remote_payload["results"]
+    assert isinstance(local_results, list)
+    assert isinstance(remote_results, list)
+    local_titles = [result["title"] for result in local_results if isinstance(result, dict)]
+    remote_titles = [result["title"] for result in remote_results if isinstance(result, dict)]
 
     assert local_titles == ["Example Local"]
     assert remote_titles == ["Example Remote"]

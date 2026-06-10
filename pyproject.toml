@@ -48,4 +48,4 @@ target-version = "py311"
 [tool.basedpyright]
 include = ["src", "tests"]
 pythonVersion = "3.11"
-typeCheckingMode = "off"
+typeCheckingMode = "standard"

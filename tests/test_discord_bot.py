@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+from email.message import Message
 from io import BytesIO
 from typing import Any
 from urllib import error
 
-from media_memory.config import MediaMemoryConfig
+from media_memory.config import DiscordConfig, MediaMemoryConfig
 from media_memory.discord_bot import (
     DiscordBotDisabled,
     MediaMemoryDiscordBot,
@@ -107,18 +108,18 @@ def test_missing_token_or_disabled_config_disables_bot_without_client() -> None:
     assert isinstance(disabled, DiscordBotDisabled)
     assert disabled.reason == "Discord bot is disabled in config"
 
-    missing_token_config = MediaMemoryConfig(discord={"enabled": True, "token": None})
+    missing_token_config = MediaMemoryConfig(discord=DiscordConfig(enabled=True, token=None))
     missing_token = create_discord_bot(missing_token_config)
 
     assert isinstance(missing_token, DiscordBotDisabled)
     assert missing_token.reason == "Discord bot token is not configured"
 
     remote_config = MediaMemoryConfig(
-        discord={
-            "enabled": True,
-            "token": "placeholder-token",
-            "api_base_url": "https://example.com",
-        }
+        discord=DiscordConfig(
+            enabled=True,
+            token="placeholder-token",
+            api_base_url="https://example.com",
+        )
     )
     remote_disabled = create_discord_bot(remote_config)
 
@@ -128,7 +129,7 @@ def test_missing_token_or_disabled_config_disables_bot_without_client() -> None:
 
 def test_enabled_config_uses_injected_rest_client_without_network() -> None:
     client = FakeRestClient({"results": []})
-    config = MediaMemoryConfig(discord={"enabled": True, "token": "placeholder-token"})
+    config = MediaMemoryConfig(discord=DiscordConfig(enabled=True, token="placeholder-token"))
 
     bot = create_discord_bot(config, rest_client=client)
 
@@ -162,7 +163,7 @@ def test_url_lib_rest_client_does_not_echo_http_error_body(monkeypatch: Any) -> 
             "http://127.0.0.1:8765/search",
             500,
             "Internal Server Error",
-            hdrs=None,
+            hdrs=Message(),
             fp=BytesIO(b'{"error":"secret-token leaked"}'),
         )
 
