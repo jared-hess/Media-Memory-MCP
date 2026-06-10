@@ -11,6 +11,7 @@ from media_memory.core.embeddings import EmbeddingProvider
 
 
 VECTOR_TABLE_NAME = "chunks"
+SCHEMA_SEED_CHUNK_ID = -1
 
 
 class VectorRecord(dict[str, Any]):
@@ -55,7 +56,8 @@ class LanceVectorStore(VectorStore):
         record = self._record(chunk_id, vector, metadata or {})
         table = self._table_or_none()
         if table is None:
-            self._db.create_table(self.table_name, data=[record])
+            table = self._db.create_table(self.table_name, data=[_schema_seed(record), record])
+            table.delete(f"chunk_id = {SCHEMA_SEED_CHUNK_ID}")
             return
         table.delete(f"chunk_id = {int(chunk_id)}")
         table.add([record])
@@ -80,7 +82,8 @@ class LanceVectorStore(VectorStore):
             return 0
         vectors = embeddings.embed_texts([str(row["text"]) for row in rows])
         records = [self._record(int(row["chunk_id"]), vector, _metadata_from_chunk_row(row)) for row, vector in zip(rows, vectors)]
-        self._db.create_table(self.table_name, data=records, mode="overwrite")
+        table = self._db.create_table(self.table_name, data=[_schema_seed(records[0]), *records], mode="overwrite")
+        table.delete(f"chunk_id = {SCHEMA_SEED_CHUNK_ID}")
         return len(records)
 
     def delete_index(self) -> None:
@@ -125,6 +128,19 @@ def _optional_float(value: object) -> float | None:
     if value is None:
         return None
     return float(value)
+
+
+def _schema_seed(record: VectorRecord) -> VectorRecord:
+    seed = VectorRecord(record)
+    seed["chunk_id"] = SCHEMA_SEED_CHUNK_ID
+    seed["media_item_id"] = "schema-seed"
+    seed["document_id"] = "schema-seed"
+    seed["source_type"] = "schema-seed"
+    seed["source_provider"] = "schema-seed"
+    seed["start_time_seconds"] = 0.0
+    seed["end_time_seconds"] = 0.0
+    seed["corpus_id"] = "schema-seed"
+    return seed
 
 
 def _metadata_from_chunk_row(row: Any) -> dict[str, Any]:
