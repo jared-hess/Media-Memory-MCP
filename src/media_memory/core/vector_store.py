@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import shutil
-import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any
 
 from media_memory.core.db import MediaMemoryDB
@@ -31,12 +31,25 @@ class LanceVectorStore(VectorStore):
     """Local LanceDB-backed derived vector index for subtitle chunks."""
 
     def __init__(self, path: str | Path | None = None, *, table_name: str = VECTOR_TABLE_NAME) -> None:
-        self.path = Path(path) if path is not None else Path(tempfile.mkdtemp(prefix="media-memory-vectors-"))
+        self._temporary_directory: TemporaryDirectory[str] | None = None
+        if path is None:
+            self._temporary_directory = TemporaryDirectory(prefix="media-memory-vectors-")
+            self.path = Path(self._temporary_directory.name)
+        else:
+            self.path = Path(path)
         self.path.mkdir(parents=True, exist_ok=True)
         self.table_name = table_name
         import lancedb
 
         self._db = lancedb.connect(str(self.path))
+
+    def close(self) -> None:
+        if self._temporary_directory is not None:
+            self._temporary_directory.cleanup()
+            self._temporary_directory = None
+
+    def __del__(self) -> None:
+        self.close()
 
     def upsert(self, chunk_id: int, vector: list[float], metadata: dict[str, Any] | None = None) -> None:
         record = self._record(chunk_id, vector, metadata or {})
@@ -110,7 +123,7 @@ class LanceDBVectorStore(LanceVectorStore):
 
 def _optional_float(value: object) -> float | None:
     if value is None:
-        return float("nan")
+        return None
     return float(value)
 
 

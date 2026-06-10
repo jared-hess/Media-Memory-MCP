@@ -6,7 +6,7 @@
 - Default to read-only media/config mounts and read-write app data.
 - Do not enable ingest MCP tools unless `mcp.allow_ingest_tools` is explicitly `true`.
 - Do not enable Plex, OpenSubtitles, Bazarr, OpenAI, REST, Discord, Docker, or hosted services by default.
-- Preserve the existing argparse CLI until the planned Typer CLI task.
+- Preserve the Typer CLI command surface and backward-compatible entrypoints.
 
 ## Configuration
 
