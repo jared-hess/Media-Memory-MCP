@@ -1,0 +1,25 @@
+services:
+  media-memory:
+    build:
+      context: .
+    image: media-memory-mcp:local
+    command: ["media-memory", "mcp", "--config", "/config/config.yaml"]
+    volumes:
+      - type: bind
+        source: ./config
+        target: /config
+        read_only: true
+      - type: bind
+        source: ./data
+        target: /data
+      - type: bind
+        source: ${MEDIA_LIBRARY_PATH:-./media}
+        target: /media
+        read_only: true
+      - type: bind
+        source: ${BAZARR_SUBTITLE_PATH:-./bazarr}
+        target: /bazarr
+        read_only: true
+    stdin_open: true
+    tty: false
+    restart: unless-stopped
