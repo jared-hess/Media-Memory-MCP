@@ -1,12 +1,25 @@
 from __future__ import annotations
 
-import math
+import shutil
+import tempfile
 from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Any
+
+from media_memory.core.db import MediaMemoryDB
+from media_memory.core.embeddings import EmbeddingProvider
+
+
+VECTOR_TABLE_NAME = "chunks"
+
+
+class VectorRecord(dict[str, Any]):
+    """Dictionary-shaped vector row accepted by LanceDB."""
 
 
 class VectorStore(ABC):
     @abstractmethod
-    def upsert(self, chunk_id: int, vector: list[float]) -> None:
+    def upsert(self, chunk_id: int, vector: list[float], metadata: dict[str, Any] | None = None) -> None:
         raise NotImplementedError
 
     @abstractmethod
@@ -14,34 +27,101 @@ class VectorStore(ABC):
         raise NotImplementedError
 
 
-class LanceDBVectorStore(VectorStore):
-    """LanceDB abstraction with a local in-memory fallback.
+class LanceVectorStore(VectorStore):
+    """Local LanceDB-backed derived vector index for subtitle chunks."""
 
-    This keeps the interface stable while avoiding mandatory external dependencies.
-    """
+    def __init__(self, path: str | Path | None = None, *, table_name: str = VECTOR_TABLE_NAME) -> None:
+        self.path = Path(path) if path is not None else Path(tempfile.mkdtemp(prefix="media-memory-vectors-"))
+        self.path.mkdir(parents=True, exist_ok=True)
+        self.table_name = table_name
+        import lancedb
 
-    def __init__(self) -> None:
-        self._vectors: dict[int, list[float]] = {}
+        self._db = lancedb.connect(str(self.path))
 
-    def upsert(self, chunk_id: int, vector: list[float]) -> None:
-        self._vectors[chunk_id] = vector
+    def upsert(self, chunk_id: int, vector: list[float], metadata: dict[str, Any] | None = None) -> None:
+        record = self._record(chunk_id, vector, metadata or {})
+        table = self._table_or_none()
+        if table is None:
+            self._db.create_table(self.table_name, data=[record])
+            return
+        table.delete(f"chunk_id = {int(chunk_id)}")
+        table.add([record])
 
     def search(self, vector: list[float], limit: int = 20) -> list[tuple[int, float]]:
-        scored = []
-        for chunk_id, candidate in self._vectors.items():
-            score = _cosine_similarity(vector, candidate)
-            scored.append((chunk_id, score))
-        scored.sort(key=lambda item: item[1], reverse=True)
-        return scored[:limit]
+        table = self._table_or_none()
+        if table is None:
+            return []
+        rows = table.search(vector).limit(limit).to_list()
+        results: list[tuple[int, float]] = []
+        for row in rows:
+            distance = float(row.get("_distance", 0.0))
+            results.append((int(row["chunk_id"]), 1.0 / (1.0 + distance)))
+        return results
+
+    def rebuild_from_chunks(self, db: MediaMemoryDB, embeddings: EmbeddingProvider) -> int:
+        """Recreate the derived LanceDB table from canonical SQLite chunks."""
+
+        self.delete_index()
+        rows = db.list_all_chunks()
+        if not rows:
+            return 0
+        vectors = embeddings.embed_texts([str(row["text"]) for row in rows])
+        records = [self._record(int(row["chunk_id"]), vector, _metadata_from_chunk_row(row)) for row, vector in zip(rows, vectors)]
+        self._db.create_table(self.table_name, data=records, mode="overwrite")
+        return len(records)
+
+    def delete_index(self) -> None:
+        table_names = self._table_names()
+        if self.table_name in table_names:
+            self._db.drop_table(self.table_name)
+        table_path = self.path / f"{self.table_name}.lance"
+        if table_path.exists():
+            shutil.rmtree(table_path)
+
+    def _table_or_none(self) -> Any | None:
+        if self.table_name not in self._table_names():
+            return None
+        return self._db.open_table(self.table_name)
+
+    def _table_names(self) -> set[str]:
+        if hasattr(self._db, "list_tables"):
+            response = self._db.list_tables()
+            names = getattr(response, "tables", response)
+            return {str(name) for name in names}
+        return {str(name) for name in self._db.table_names()}
+
+    def _record(self, chunk_id: int, vector: list[float], metadata: dict[str, Any]) -> VectorRecord:
+        return VectorRecord(
+            chunk_id=int(chunk_id),
+            vector=[float(value) for value in vector],
+            media_item_id=str(metadata.get("media_item_id") or ""),
+            document_id=str(metadata.get("document_id") or ""),
+            source_type=str(metadata.get("source_type") or ""),
+            source_provider=str(metadata.get("source_provider") or ""),
+            start_time_seconds=_optional_float(metadata.get("start_time_seconds")),
+            end_time_seconds=_optional_float(metadata.get("end_time_seconds")),
+            corpus_id=str(metadata.get("corpus_id") or "local"),
+        )
 
 
-def _cosine_similarity(left: list[float], right: list[float]) -> float:
-    length = min(len(left), len(right))
-    if length == 0:
-        return 0.0
-    dot = sum(left[i] * right[i] for i in range(length))
-    left_norm = math.sqrt(sum(left[i] * left[i] for i in range(length)))
-    right_norm = math.sqrt(sum(right[i] * right[i] for i in range(length)))
-    if left_norm == 0 or right_norm == 0:
-        return 0.0
-    return dot / (left_norm * right_norm)
+class LanceDBVectorStore(LanceVectorStore):
+    """Backward-compatible name retained for existing imports/tests."""
+
+
+def _optional_float(value: object) -> float | None:
+    if value is None:
+        return float("nan")
+    return float(value)
+
+
+def _metadata_from_chunk_row(row: Any) -> dict[str, Any]:
+    return {
+        "chunk_id": int(row["chunk_id"]),
+        "media_item_id": str(row["media_item_id"]),
+        "document_id": str(row["document_id"]),
+        "source_type": str(row["source_type"]),
+        "source_provider": str(row["source_provider"]),
+        "start_time_seconds": row["start_time_seconds"],
+        "end_time_seconds": row["end_time_seconds"],
+        "corpus_id": str(row["corpus_id"]),
+    }
