@@ -14,7 +14,7 @@ COPY pyproject.toml README.md ./
 COPY src ./src
 
 RUN pip install --no-cache-dir . \
-    && python -m pip install --no-cache-dir --upgrade "wheel>=0.46.2" "jaraco.context>=6.1.0" \
+    && python -m pip install --no-cache-dir --upgrade setuptools "wheel>=0.46.2" "jaraco.context>=6.1.0" \
     && media-memory --help >/dev/null \
     && ffmpeg -version >/dev/null \
     && ffprobe -version >/dev/null
