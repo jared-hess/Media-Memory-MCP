@@ -1,0 +1,7 @@
+1
+00:00:30,000 --> 00:00:32,000
+The bartender wipes a glass during the discussion.
+
+2
+00:00:33,000 --> 00:00:35,000
+He jokes that root beer is vile because it is so bubbly and cloying.

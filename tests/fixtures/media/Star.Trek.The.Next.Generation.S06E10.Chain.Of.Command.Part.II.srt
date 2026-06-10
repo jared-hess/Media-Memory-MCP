@@ -1,0 +1,7 @@
+1
+00:00:10,000 --> 00:00:12,000
+The captain studies the lamps on the wall.
+
+2
+00:00:13,000 --> 00:00:15,000
+He calmly insists there are four lights in this synthetic test scene.

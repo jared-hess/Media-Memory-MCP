@@ -1,43 +1,49 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+import atexit
+from pathlib import Path
 
-from media_memory.core.search import SearchService
+from mcp.server.fastmcp import FastMCP
+
+from media_memory.config import MediaMemoryConfig
+from media_memory.mcp_server.resources import register_resources
+from media_memory.mcp_server.tools import McpServices, create_services, register_tools
 
 
-@dataclass
-class MediaMemoryMCPServer:
-    search_service: SearchService
+def create_server(config_path: Path | str | None = None) -> FastMCP:
+    """Create the local-first FastMCP server for Media Memory."""
 
-    def search_media(self, query: str, limit: int = 10) -> dict[str, object]:
-        return {"results": [item.to_dict() for item in self.search_service.search_media(query, limit=limit)]}
+    services = create_services(config_path)
+    app = FastMCP(
+        "media-memory",
+        instructions="Search a local Media Memory SQLite index over stdio.",
+    )
+    register_tools(app, services)
+    register_resources(app, services)
+    _attach_services(app, services)
+    return app
 
-    def find_episode(self, query: str, season: int | None = None, episode: int | None = None) -> dict[str, object]:
-        return {
-            "results": [
-                item.to_dict() for item in self.search_service.find_episode(query, season=season, episode=episode)
-            ]
-        }
 
-    def find_scene(self, query: str, media_path: str | None = None, limit: int = 10) -> dict[str, object]:
-        return {"results": self.search_service.find_scene(query, media_path=media_path, limit=limit)}
+def run_server(config_path: Path | str | None = None, *, config: MediaMemoryConfig | None = None) -> None:
+    """Run the MCP server over the configured safe transport."""
 
-    def search_dialogue(self, query: str, limit: int = 10) -> dict[str, object]:
-        return {"results": self.search_service.search_dialogue(query, limit=limit)}
+    services = create_services(config_path, config=config)
+    app = FastMCP(
+        "media-memory",
+        instructions="Search a local Media Memory SQLite index over stdio.",
+    )
+    try:
+        register_tools(app, services)
+        register_resources(app, services)
+        _attach_services(app, services)
+        app.run(transport=services.config.mcp.transport)
+    finally:
+        services.close()
 
-    def get_scene_context(self, chunk_id: int, window: int = 2) -> dict[str, object]:
-        return {"result": self.search_service.get_scene_context(chunk_id=chunk_id, window=window)}
 
-    def call_tool(self, tool_name: str, **kwargs: object) -> dict[str, object]:
-        dispatch = {
-            "search_media": self.search_media,
-            "find_episode": self.find_episode,
-            "find_scene": self.find_scene,
-            "search_dialogue": self.search_dialogue,
-            "get_scene_context": self.get_scene_context,
-        }
-        if tool_name not in dispatch:
-            raise ValueError(
-                f"Unknown tool: {tool_name}. Available tools: {', '.join(sorted(dispatch))}"
-            )
-        return dispatch[tool_name](**kwargs)
+def _attach_services(app: FastMCP, services: McpServices) -> None:
+    setattr(app, "media_memory_services", services)
+    atexit.register(services.close)
+
+
+__all__ = ["create_server", "run_server"]

@@ -1,4 +1,4 @@
-from media_memory.cli.main import main
+from media_memory.cli import main
 
 
 if __name__ == "__main__":
