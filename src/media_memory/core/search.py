@@ -12,7 +12,12 @@ from pydantic import TypeAdapter
 from media_memory.core.db import MediaMemoryDB, SCHEMA_VERSION
 from media_memory.core.embeddings import EmbeddingProvider
 from media_memory.core.models import DEFAULT_CORPUS_ID, SearchEvidence, SearchFilters, SearchResult
-from media_memory.core.ranking import RankingSignals, combine_structured_scores, metadata_confidence, normalize_fts_score
+from media_memory.core.ranking import (
+    RankingSignals,
+    combine_structured_scores,
+    metadata_confidence,
+    normalize_fts_score,
+)
 from media_memory.core.vector_store import VectorStore
 
 
@@ -131,7 +136,10 @@ class SearchService:
             preferred_source_kinds={"subtitle", "srt", "caption", "subtitles"},
             require_timestamps=True,
         )
-        return [self._scene_shape(row, query=query) for row in rows[: _limit_from_filters(active_filters, limit)]]
+        return [
+            self._scene_shape(row, query=query)
+            for row in rows[: _limit_from_filters(active_filters, limit)]
+        ]
 
     def search_dialogue(
         self,
@@ -167,7 +175,7 @@ class SearchService:
             f"""
             SELECT m.*
             FROM media_items m
-            WHERE {' AND '.join(where)}
+            WHERE {" AND ".join(where)}
             LIMIT 1
             """,
             params,
@@ -256,7 +264,7 @@ class SearchService:
             JOIN chunks c ON c.legacy_id = chunks_fts.rowid
             JOIN media_items m ON m.id = c.media_item_id
             JOIN documents d ON d.id = c.document_id
-            WHERE chunks_fts MATCH ? AND {' AND '.join(clauses)}
+            WHERE chunks_fts MATCH ? AND {" AND ".join(clauses)}
             ORDER BY bm25(chunks_fts),
                      CASE WHEN c.start_ms IS NULL THEN 1 ELSE 0 END,
                      c.start_ms,
@@ -267,7 +275,9 @@ class SearchService:
         if preferred_source_kinds:
             rows.sort(
                 key=lambda row: (
-                    self._rank(row, query=normalized_query, preferred_source_kinds=preferred_source_kinds).combined_score,
+                    self._rank(
+                        row, query=normalized_query, preferred_source_kinds=preferred_source_kinds
+                    ).combined_score,
                     row["start_ms"] is not None,
                 ),
                 reverse=True,
@@ -283,7 +293,14 @@ class SearchService:
         query: str,
     ) -> list[SearchResult]:
         grouped: dict[str, dict[str, Any]] = defaultdict(
-            lambda: {"row": None, "lexical": 0.0, "combined": 0.0, "confidence": 0.0, "why": [], "evidences": []}
+            lambda: {
+                "row": None,
+                "lexical": 0.0,
+                "combined": 0.0,
+                "confidence": 0.0,
+                "why": [],
+                "evidences": [],
+            }
         )
         for row in rows:
             key = str(row["stable_media_id"])
@@ -378,7 +395,9 @@ class SearchService:
             checksum=row["document_checksum"],
         )
 
-    def _rank(self, row: sqlite3.Row, *, query: str, preferred_source_kinds: set[str]) -> RankingSignals:
+    def _rank(
+        self, row: sqlite3.Row, *, query: str, preferred_source_kinds: set[str]
+    ) -> RankingSignals:
         lexical_raw = float(row["lexical_score"] or 0.0)
         lexical_score = normalize_fts_score(lexical_raw)
         metadata_scores: list[float] = []
@@ -394,8 +413,7 @@ class SearchService:
         text = str(row["normalized_text"] or row["text"] or "").casefold()
         text_tokens = set(_WORD_RE.findall(text))
         title_text = " ".join(
-            str(value or "")
-            for value in (row["title"], row["show_title"], row["episode_title"])
+            str(value or "") for value in (row["title"], row["show_title"], row["episode_title"])
         ).casefold()
         title_tokens = set(_WORD_RE.findall(title_text))
         matched_terms = [term for term in query_terms if term in text_tokens]
@@ -411,7 +429,11 @@ class SearchService:
             metadata_scores.append(0.25)
             why.append("matched title/show: " + ", ".join(title_matches[:5]))
         if row["start_ms"] is not None:
-            metadata_scores.append(0.15 if source_kind.casefold() in {"subtitle", "srt", "caption", "subtitles"} else 0.05)
+            metadata_scores.append(
+                0.15
+                if source_kind.casefold() in {"subtitle", "srt", "caption", "subtitles"}
+                else 0.05
+            )
             why.append(f"matched timestamp metadata at {_format_ms(int(row['start_ms']))}")
 
         metadata_score = metadata_confidence(metadata_scores)
@@ -470,7 +492,9 @@ class SearchService:
             (_as_int_or_none(chunk_id), str(chunk_id)),
         ).fetchone()
 
-    def _context_rows(self, current: sqlite3.Row, *, direction: str, limit: int) -> list[sqlite3.Row]:
+    def _context_rows(
+        self, current: sqlite3.Row, *, direction: str, limit: int
+    ) -> list[sqlite3.Row]:
         if limit == 0:
             return []
         comparator = "<" if direction == "before" else ">"
@@ -539,7 +563,9 @@ class SearchService:
     def _get_cached_results(self, cache_key: str) -> list[SearchResult] | None:
         if not self.use_cache:
             return None
-        row = self.db.conn.execute("SELECT result_json FROM search_cache WHERE cache_key = ?", (cache_key,)).fetchone()
+        row = self.db.conn.execute(
+            "SELECT result_json FROM search_cache WHERE cache_key = ?", (cache_key,)
+        ).fetchone()
         if row is None:
             return None
         try:
@@ -696,7 +722,9 @@ def _filter_clauses(filters: SearchFilters) -> tuple[list[str], list[object]]:
 def _media_shape(row: sqlite3.Row) -> dict[str, object]:
     return {
         "id": row["stable_media_id"] if "stable_media_id" in row.keys() else row["id"],
-        "legacy_id": row["media_legacy_id"] if "media_legacy_id" in row.keys() else row["legacy_id"],
+        "legacy_id": row["media_legacy_id"]
+        if "media_legacy_id" in row.keys()
+        else row["legacy_id"],
         "corpus_id": row["corpus_id"],
         "path": row["media_path"] if "media_path" in row.keys() else row["path"],
         "title": row["title"],
@@ -708,7 +736,11 @@ def _media_shape(row: sqlite3.Row) -> dict[str, object]:
         "episode_number": row["episode_number"],
         "episode_title": row["episode_title"],
         "year": row["year"],
-        "provider_ids": _json_dict(row["media_provider_ids_json"] if "media_provider_ids_json" in row.keys() else row["provider_ids_json"]),
+        "provider_ids": _json_dict(
+            row["media_provider_ids_json"]
+            if "media_provider_ids_json" in row.keys()
+            else row["provider_ids_json"]
+        ),
     }
 
 
@@ -725,7 +757,9 @@ def _json_dict(value: object) -> dict[str, str]:
 
 
 def _source_provider(row: sqlite3.Row) -> str | None:
-    provider_ids = _json_dict(row["document_provider_ids_json"] if "document_provider_ids_json" in row.keys() else None)
+    provider_ids = _json_dict(
+        row["document_provider_ids_json"] if "document_provider_ids_json" in row.keys() else None
+    )
     return provider_ids.get("source_provider") or provider_ids.get("provider")
 
 

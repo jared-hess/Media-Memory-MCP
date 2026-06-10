@@ -16,7 +16,9 @@ class SceneContextTests(unittest.TestCase):
             db.init_schema()
             media_id = db.upsert_media_item(path="/media/Movie.mkv", title="Movie", kind="movie")
             chunk_ids: list[int] = []
-            for index, text in enumerate(["before one", "before two", "target line", "after one", "after two"]):
+            for index, text in enumerate(
+                ["before one", "before two", "target line", "after one", "after two"]
+            ):
                 chunk_id = db.insert_chunk(
                     media_id,
                     SubtitleChunk(
@@ -36,9 +38,13 @@ class SceneContextTests(unittest.TestCase):
 
             self.assertIsNotNone(context)
             assert context is not None
-            self.assertEqual(["before one", "before two"], [item["text"] for item in context["before"]])
+            self.assertEqual(
+                ["before one", "before two"], [item["text"] for item in context["before"]]
+            )
             self.assertEqual("target line", context["current"]["text"])
-            self.assertEqual(["after one", "after two"], [item["text"] for item in context["after"]])
+            self.assertEqual(
+                ["after one", "after two"], [item["text"] for item in context["after"]]
+            )
             self.assertEqual(5, len(context["evidence"]))
             self.assertIn("target line", context["context"])
             db.close()

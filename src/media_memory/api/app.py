@@ -25,7 +25,9 @@ Send = Callable[[dict[str, Any]], Awaitable[None]]
 class SimpleASGIApp:
     """Small optional ASGI app for local REST usage without a required web framework."""
 
-    def __init__(self, config_path: Path | str | None = None, *, config: MediaMemoryConfig | None = None):
+    def __init__(
+        self, config_path: Path | str | None = None, *, config: MediaMemoryConfig | None = None
+    ):
         self.config_path = config_path
         self.config = config
 
@@ -37,7 +39,9 @@ class SimpleASGIApp:
         method = str(scope.get("method", "GET")).upper()
         path = str(scope.get("path", "/"))
         raw_query = scope.get("query_string", b"")
-        query = parse_qs(raw_query.decode("utf-8") if isinstance(raw_query, bytes) else str(raw_query))
+        query = parse_qs(
+            raw_query.decode("utf-8") if isinstance(raw_query, bytes) else str(raw_query)
+        )
 
         try:
             status_code, payload = await self._dispatch(method, path, query, receive)
@@ -71,7 +75,9 @@ class SimpleASGIApp:
                 if len(parts) == 2:
                     return 200, rest_media_payload(services, parts[1])
                 if len(parts) == 3 and parts[2] == "scene":
-                    return 200, rest_scene_payload(services, parts[1], _first_query_value(query, "start"))
+                    return 200, rest_scene_payload(
+                        services, parts[1], _first_query_value(query, "start")
+                    )
             return 404, {"error": "Not found"}
         finally:
             services.close()
@@ -108,7 +114,10 @@ async def _send_json(send: Send, status_code: int, payload: dict[str, object]) -
         {
             "type": "http.response.start",
             "status": status_code,
-            "headers": [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode("ascii"))],
+            "headers": [
+                (b"content-type", b"application/json"),
+                (b"content-length", str(len(body)).encode("ascii")),
+            ],
         }
     )
     await send({"type": "http.response.body", "body": body})

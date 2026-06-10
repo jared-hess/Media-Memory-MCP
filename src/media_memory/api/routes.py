@@ -92,7 +92,9 @@ def rest_media_payload(services: McpServices, media_id: str) -> dict[str, object
     return get_media_payload(services, media_id=media_id)
 
 
-def rest_scene_payload(services: McpServices, media_id: str, start: str | None) -> dict[str, object]:
+def rest_scene_payload(
+    services: McpServices, media_id: str, start: str | None
+) -> dict[str, object]:
     """Return scene context for the chunk nearest a media timestamp in seconds."""
 
     if start is None:

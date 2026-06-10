@@ -20,7 +20,9 @@ class VectorRecord(dict[str, Any]):
 
 class VectorStore(ABC):
     @abstractmethod
-    def upsert(self, chunk_id: int, vector: list[float], metadata: dict[str, Any] | None = None) -> None:
+    def upsert(
+        self, chunk_id: int, vector: list[float], metadata: dict[str, Any] | None = None
+    ) -> None:
         raise NotImplementedError
 
     @abstractmethod
@@ -31,7 +33,9 @@ class VectorStore(ABC):
 class LanceVectorStore(VectorStore):
     """Local LanceDB-backed derived vector index for subtitle chunks."""
 
-    def __init__(self, path: str | Path | None = None, *, table_name: str = VECTOR_TABLE_NAME) -> None:
+    def __init__(
+        self, path: str | Path | None = None, *, table_name: str = VECTOR_TABLE_NAME
+    ) -> None:
         self._temporary_directory: TemporaryDirectory[str] | None = None
         if path is None:
             self._temporary_directory = TemporaryDirectory(prefix="media-memory-vectors-")
@@ -52,7 +56,9 @@ class LanceVectorStore(VectorStore):
     def __del__(self) -> None:
         self.close()
 
-    def upsert(self, chunk_id: int, vector: list[float], metadata: dict[str, Any] | None = None) -> None:
+    def upsert(
+        self, chunk_id: int, vector: list[float], metadata: dict[str, Any] | None = None
+    ) -> None:
         record = self._record(chunk_id, vector, metadata or {})
         table = self._table_or_none()
         if table is None:
@@ -81,8 +87,13 @@ class LanceVectorStore(VectorStore):
         if not rows:
             return 0
         vectors = embeddings.embed_texts([str(row["text"]) for row in rows])
-        records = [self._record(int(row["chunk_id"]), vector, _metadata_from_chunk_row(row)) for row, vector in zip(rows, vectors)]
-        table = self._db.create_table(self.table_name, data=[_schema_seed(records[0]), *records], mode="overwrite")
+        records = [
+            self._record(int(row["chunk_id"]), vector, _metadata_from_chunk_row(row))
+            for row, vector in zip(rows, vectors)
+        ]
+        table = self._db.create_table(
+            self.table_name, data=[_schema_seed(records[0]), *records], mode="overwrite"
+        )
         table.delete(f"chunk_id = {SCHEMA_SEED_CHUNK_ID}")
         return len(records)
 

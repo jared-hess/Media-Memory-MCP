@@ -156,7 +156,7 @@ embeddings:
   dimensions: 8
 index:
   sqlite_path: {db_path.as_posix()}
-  vector_path: {(tmp_path / 'vectors').as_posix()}
+  vector_path: {(tmp_path / "vectors").as_posix()}
 media_sources:
   - type: filesystem
     enabled: true

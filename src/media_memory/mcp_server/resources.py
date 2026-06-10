@@ -45,7 +45,11 @@ def get_show_resource(services: McpServices, show_slug: str) -> dict[str, object
         """,
         (services.config.app.corpus_id,),
     ).fetchall()
-    matches = [row_to_media(row) for row in rows if _matches_slug(row["show_title"] or row["title"], show_slug)]
+    matches = [
+        row_to_media(row)
+        for row in rows
+        if _matches_slug(row["show_title"] or row["title"], show_slug)
+    ]
     return {"show_slug": show_slug, "results": matches}
 
 
@@ -69,7 +73,11 @@ def get_episode_resource(
         """,
         (services.config.app.corpus_id, season_number, episode_number),
     ).fetchall()
-    matches = [row_to_media(row) for row in rows if _matches_slug(row["show_title"] or row["title"], show_slug)]
+    matches = [
+        row_to_media(row)
+        for row in rows
+        if _matches_slug(row["show_title"] or row["title"], show_slug)
+    ]
     return {
         "show_slug": show_slug,
         "season": season_number,
@@ -78,7 +86,9 @@ def get_episode_resource(
     }
 
 
-def get_movie_resource(services: McpServices, movie_slug: str, year: str | int) -> dict[str, object]:
+def get_movie_resource(
+    services: McpServices, movie_slug: str, year: str | int
+) -> dict[str, object]:
     movie_year = int(year)
     rows = services.db.conn.execute(
         """

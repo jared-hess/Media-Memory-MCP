@@ -121,12 +121,16 @@ def embedding_id(
 ) -> str:
     """Return a deterministic embedding ID for a chunk/provider/model tuple."""
 
-    basis = "|".join([_normalize(chunk_id), _normalize(provider), _normalize(model), _normalize(dimensions)])
+    basis = "|".join(
+        [_normalize(chunk_id), _normalize(provider), _normalize(model), _normalize(dimensions)]
+    )
     return _format_id("emb", corpus_id, _hint(model), basis)
 
 
 def _format_id(kind: str, corpus_id: str, hint: str, basis: str) -> str:
-    digest = hashlib.sha256(f"{ID_VERSION}|{kind}|{_normalize(corpus_id)}|{basis}".encode("utf-8")).hexdigest()[:16]
+    digest = hashlib.sha256(
+        f"{ID_VERSION}|{kind}|{_normalize(corpus_id)}|{basis}".encode("utf-8")
+    ).hexdigest()[:16]
     parts = [ID_VERSION, kind, _slug(corpus_id)]
     if hint:
         parts.append(hint)

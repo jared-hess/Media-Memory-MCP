@@ -12,7 +12,9 @@ SUBTITLE_EXTENSIONS = {".srt", ".vtt", ".ass", ".ssa"}
 class LocalSubtitleSource:
     """Read-only local sidecar subtitle source."""
 
-    def __init__(self, *, extensions: Iterable[str] | None = None, roots: Iterable[Path | str] | None = None):
+    def __init__(
+        self, *, extensions: Iterable[str] | None = None, roots: Iterable[Path | str] | None = None
+    ):
         self.extensions = {extension.lower() for extension in (extensions or SUBTITLE_EXTENSIONS)}
         self.roots = [Path(root) for root in (roots or [])]
 
@@ -26,7 +28,11 @@ class LocalSubtitleSource:
         stem = media_item.path.stem
         candidates: list[Path] = []
         for path in sorted(media_dir.iterdir()):
-            if path.is_symlink() or not path.is_file() or path.suffix.lower() not in self.extensions:
+            if (
+                path.is_symlink()
+                or not path.is_file()
+                or path.suffix.lower() not in self.extensions
+            ):
                 continue
             if path.stem == stem or path.name.startswith(f"{stem}."):
                 candidates.append(path)

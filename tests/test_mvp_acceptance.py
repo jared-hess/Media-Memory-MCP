@@ -103,7 +103,9 @@ def test_golden_query_results_include_evidence_and_subtitle_timestamps(tmp_path:
         assert results, golden["query"]
         matching_results = [result for result in results if _matches_expected_media(result, golden)]
         assert matching_results, golden["query"]
-        _assert_result_has_evidence(matching_results[0], expected_source_kind=str(golden["source_kind"]))
+        _assert_result_has_evidence(
+            matching_results[0], expected_source_kind=str(golden["source_kind"])
+        )
 
 
 def test_fixture_ingest_rerun_creates_no_duplicate_chunks(tmp_path: Path) -> None:
@@ -239,6 +241,11 @@ def _assert_result_has_evidence(result: SearchResult, *, expected_source_kind: s
     assert result.evidences
     assert any(evidence.text.strip() for evidence in result.evidences)
     if expected_source_kind == "subtitle":
-        assert any(evidence.start_ms is not None and evidence.end_ms is not None for evidence in result.evidences)
+        assert any(
+            evidence.start_ms is not None and evidence.end_ms is not None
+            for evidence in result.evidences
+        )
     else:
-        assert any(evidence.start_ms is None and evidence.end_ms is None for evidence in result.evidences)
+        assert any(
+            evidence.start_ms is None and evidence.end_ms is None for evidence in result.evidences
+        )

@@ -10,7 +10,12 @@ import typer
 
 from media_memory.config import MediaMemoryConfig, load_config
 from media_memory.core.db import MediaMemoryDB, SCHEMA_VERSION
-from media_memory.core.embeddings import EmbeddingProvider, EmbeddingProviderConfigError, MockEmbeddingProvider, OpenAIEmbeddingProvider
+from media_memory.core.embeddings import (
+    EmbeddingProvider,
+    EmbeddingProviderConfigError,
+    MockEmbeddingProvider,
+    OpenAIEmbeddingProvider,
+)
 from media_memory.core.models import MediaItem, SearchFilters
 from media_memory.core.search import SearchService
 from media_memory.core.vector_store import LanceVectorStore, VectorStore
@@ -68,12 +73,16 @@ def _build_embeddings(config: MediaMemoryConfig) -> EmbeddingProvider:
     if config.embeddings.provider == "mock":
         return MockEmbeddingProvider(dims=config.embeddings.dimensions)
     try:
-        return OpenAIEmbeddingProvider(config.embeddings.api_key, dimensions=config.embeddings.dimensions)
+        return OpenAIEmbeddingProvider(
+            config.embeddings.api_key, dimensions=config.embeddings.dimensions
+        )
     except EmbeddingProviderConfigError as exc:
         raise typer.BadParameter(str(exc)) from exc
 
 
-def _build_vectors(db: MediaMemoryDB, embeddings: EmbeddingProvider, config: MediaMemoryConfig) -> VectorStore:
+def _build_vectors(
+    db: MediaMemoryDB, embeddings: EmbeddingProvider, config: MediaMemoryConfig
+) -> VectorStore:
     vectors = LanceVectorStore(config.index.vector_path)
     vectors.rebuild_from_chunks(db, embeddings)
     return vectors
@@ -144,7 +153,9 @@ def _guard_download_missing_subtitles(config: MediaMemoryConfig, requested: bool
 
 
 def _provider_enablement(config: MediaMemoryConfig) -> dict[str, object]:
-    filesystem_enabled = any(source.type == "filesystem" and source.enabled for source in config.media_sources)
+    filesystem_enabled = any(
+        source.type == "filesystem" and source.enabled for source in config.media_sources
+    )
     plex_enabled = any(source.type == "plex" and source.enabled for source in config.media_sources)
     return {
         "media_sources": {
@@ -176,7 +187,9 @@ def _provider_enablement(config: MediaMemoryConfig) -> dict[str, object]:
 @app.command("init")
 def init_config(
     config: ConfigOption = DEFAULT_CONFIG_PATH,
-    force: Annotated[bool, typer.Option("--force", help="Overwrite an existing config file.")] = False,
+    force: Annotated[
+        bool, typer.Option("--force", help="Overwrite an existing config file.")
+    ] = False,
     json_output: JsonOption = False,
 ) -> None:
     """Create a local config file with safe defaults."""
@@ -203,14 +216,18 @@ def scan(
     _load_cli_config(config)
     items = _media_items_for_path(path)
     payload = _scan_payload(items)
-    _human_or_json(payload, json_output=json_output, human=f"Discovered {len(items)} media item(s).")
+    _human_or_json(
+        payload, json_output=json_output, human=f"Discovered {len(items)} media item(s)."
+    )
 
 
 @app.command()
 def ingest(
     path: Annotated[Path | None, typer.Argument(help="Local media root to index.")] = None,
     config: ConfigOption = DEFAULT_CONFIG_PATH,
-    all_sources: Annotated[bool, typer.Option("--all", help="Index all enabled filesystem roots from config.")] = False,
+    all_sources: Annotated[
+        bool, typer.Option("--all", help="Index all enabled filesystem roots from config.")
+    ] = False,
     download_missing_subtitles: Annotated[
         bool,
         typer.Option(
@@ -240,20 +257,30 @@ def ingest(
 @app.command()
 def reindex(
     config: ConfigOption = DEFAULT_CONFIG_PATH,
-    media_id: Annotated[str | None, typer.Option("--media-id", help="Media item ID to reindex.")] = None,
+    media_id: Annotated[
+        str | None, typer.Option("--media-id", help="Media item ID to reindex.")
+    ] = None,
     json_output: JsonOption = False,
 ) -> None:
     """Rebuild the SQLite FTS index."""
 
     with _services(config) as services:
         if media_id is not None:
-            row = services.db.conn.execute("SELECT id FROM media_items WHERE id = ?", (media_id,)).fetchone()
+            row = services.db.conn.execute(
+                "SELECT id FROM media_items WHERE id = ?", (media_id,)
+            ).fetchone()
             if row is None:
                 raise typer.BadParameter(f"Unknown media ID: {media_id}")
         services.db.rebuild_fts_index()
         chunks = services.db.count_chunks()
-    output = {"media_id": media_id, "reindexed_chunks": chunks, "scope": "media" if media_id else "all"}
-    _human_or_json(output, json_output=json_output, human=f"Rebuilt FTS index for {chunks} chunk(s).")
+    output = {
+        "media_id": media_id,
+        "reindexed_chunks": chunks,
+        "scope": "media" if media_id else "all",
+    }
+    _human_or_json(
+        output, json_output=json_output, human=f"Rebuilt FTS index for {chunks} chunk(s)."
+    )
 
 
 @app.command()
@@ -313,7 +340,9 @@ def search(
     config: ConfigOption = DEFAULT_CONFIG_PATH,
     show: Annotated[str | None, typer.Option("--show", help="Filter by show title.")] = None,
     kind: Annotated[str | None, typer.Option("--kind", help="Filter by media kind.")] = None,
-    limit: Annotated[int | None, typer.Option("--limit", min=1, help="Maximum result count.")] = None,
+    limit: Annotated[
+        int | None, typer.Option("--limit", min=1, help="Maximum result count.")
+    ] = None,
     json_output: JsonOption = False,
 ) -> None:
     """Search indexed subtitle text."""

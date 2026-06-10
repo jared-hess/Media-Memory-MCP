@@ -21,7 +21,10 @@ class IdempotentIngestTests(unittest.TestCase):
             media_path = root / "Example.Show.S01E01.Pilot.mkv"
             subtitle_path = root / "Example.Show.S01E01.Pilot.en.srt"
             media_path.write_text("", encoding="utf-8")
-            subtitle_path.write_text(_srt_text("We need a deterministic subtitle fixture for idempotent ingest."), encoding="utf-8")
+            subtitle_path.write_text(
+                _srt_text("We need a deterministic subtitle fixture for idempotent ingest."),
+                encoding="utf-8",
+            )
             db = _db(root)
             service = IngestService(db, MockEmbeddingProvider(), LanceDBVectorStore())
             item = MediaItem(title="Explicit Pilot", path=media_path, kind="unknown")
@@ -38,7 +41,9 @@ class IdempotentIngestTests(unittest.TestCase):
             self.assertEqual((1, 1, first["new_chunks"]), first_counts)
             self.assertEqual(0, second["failed_jobs"])
             self.assertGreaterEqual(second["jobs"], 3)
-            stored_media = db.conn.execute("SELECT title, kind, season, episode FROM media_items").fetchone()
+            stored_media = db.conn.execute(
+                "SELECT title, kind, season, episode FROM media_items"
+            ).fetchone()
             self.assertEqual("Explicit Pilot", stored_media["title"])
             self.assertEqual("episode", stored_media["kind"])
             self.assertEqual(1, stored_media["season"])
@@ -49,7 +54,9 @@ class IdempotentIngestTests(unittest.TestCase):
             document = db.conn.execute("SELECT checksum FROM documents").fetchone()
             self.assertIsNotNone(document["checksum"])
             self.assertEqual(64, len(document["checksum"]))
-            self.assertIn("deterministic", [row["text"] for row in db.lexical_search("deterministic")][0])
+            self.assertIn(
+                "deterministic", [row["text"] for row in db.lexical_search("deterministic")][0]
+            )
             self.assertEqual(INGEST_JOB_STATES, tuple(state.value for state in IngestJobState))
             self.assertTrue(_history_contains(db, IngestJobState.INDEXED))
             db.close()
@@ -62,11 +69,16 @@ class IdempotentIngestTests(unittest.TestCase):
             good_subtitle = root / "Movie.Name.1999.en.srt"
             media_path.write_text("", encoding="utf-8")
             bad_subtitle.write_text("this is not parseable subtitle content", encoding="utf-8")
-            good_subtitle.write_text(_srt_text("The good subtitle should still be indexed after a bad sidecar."), encoding="utf-8")
+            good_subtitle.write_text(
+                _srt_text("The good subtitle should still be indexed after a bad sidecar."),
+                encoding="utf-8",
+            )
             db = _db(root)
             pipeline = IngestPipeline(db, MockEmbeddingProvider(), LanceDBVectorStore())
 
-            stats = pipeline.ingest_media_items([MediaItem(title="Movie Name", path=media_path, kind="movie")])
+            stats = pipeline.ingest_media_items(
+                [MediaItem(title="Movie Name", path=media_path, kind="movie")]
+            )
 
             self.assertEqual(1, stats["media_items"])
             self.assertEqual(1, stats["failed_jobs"])
@@ -91,7 +103,9 @@ class IdempotentIngestTests(unittest.TestCase):
             good_subtitle = root / "Good.Movie.2001.srt"
             missing_media = root / "Missing.Movie.2002.mkv"
             good_media.write_text("", encoding="utf-8")
-            good_subtitle.write_text(_srt_text("The present media item should still be searchable."), encoding="utf-8")
+            good_subtitle.write_text(
+                _srt_text("The present media item should still be searchable."), encoding="utf-8"
+            )
             db = _db(root)
             service = IngestService(db, MockEmbeddingProvider(), LanceDBVectorStore())
 
@@ -106,7 +120,9 @@ class IdempotentIngestTests(unittest.TestCase):
             self.assertEqual(1, stats["failed_jobs"])
             self.assertGreater(stats["new_chunks"], 0)
             self.assertEqual(1, db.count_media_items())
-            failed_job = db.conn.execute("SELECT media_path, error FROM ingest_jobs WHERE status = 'failed'").fetchone()
+            failed_job = db.conn.execute(
+                "SELECT media_path, error FROM ingest_jobs WHERE status = 'failed'"
+            ).fetchone()
             self.assertEqual(str(missing_media), failed_job["media_path"])
             self.assertIn("does not exist", failed_job["error"])
             db.close()

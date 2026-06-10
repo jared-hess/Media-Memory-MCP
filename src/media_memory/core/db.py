@@ -164,7 +164,9 @@ class MediaMemoryDB:
             "SELECT legacy_id FROM media_items WHERE corpus_id = ? AND path = ?",
             (corpus_id, path),
         ).fetchone()
-        legacy_id = int(legacy_row["legacy_id"]) if legacy_row else self._next_legacy_id("media_items")
+        legacy_id = (
+            int(legacy_row["legacy_id"]) if legacy_row else self._next_legacy_id("media_items")
+        )
         self.conn.execute(
             """
             INSERT INTO media_items(
@@ -332,7 +334,9 @@ class MediaMemoryDB:
             source_path=source_path or media_path,
         )
         now = _utc_now_iso()
-        row = self.conn.execute("SELECT state_history_json, started_at FROM ingest_jobs WHERE id = ?", (job_id,)).fetchone()
+        row = self.conn.execute(
+            "SELECT state_history_json, started_at FROM ingest_jobs WHERE id = ?", (job_id,)
+        ).fetchone()
         history = _load_state_history(row["state_history_json"] if row is not None else None)
         history.append({"status": status, "at": now, "error": error})
         started_at = row["started_at"] if row is not None and row["started_at"] else now
@@ -403,7 +407,11 @@ class MediaMemoryDB:
     def count_ingest_jobs(self, *, status: str | None = None) -> int:
         if status is None:
             return int(self.conn.execute("SELECT COUNT(*) FROM ingest_jobs").fetchone()[0])
-        return int(self.conn.execute("SELECT COUNT(*) FROM ingest_jobs WHERE status = ?", (status,)).fetchone()[0])
+        return int(
+            self.conn.execute(
+                "SELECT COUNT(*) FROM ingest_jobs WHERE status = ?", (status,)
+            ).fetchone()[0]
+        )
 
     def list_ingest_jobs(self) -> list[sqlite3.Row]:
         return list(self.conn.execute("SELECT * FROM ingest_jobs ORDER BY created_at, id"))
@@ -522,7 +530,9 @@ class MediaMemoryDB:
     def _ensure_ingest_jobs_columns(self) -> None:
         columns = {row["name"] for row in self.conn.execute("PRAGMA table_info(ingest_jobs)")}
         if "state_history_json" not in columns:
-            self.conn.execute("ALTER TABLE ingest_jobs ADD COLUMN state_history_json TEXT NOT NULL DEFAULT '[]'")
+            self.conn.execute(
+                "ALTER TABLE ingest_jobs ADD COLUMN state_history_json TEXT NOT NULL DEFAULT '[]'"
+            )
 
         chunk_columns = {row["name"] for row in self.conn.execute("PRAGMA table_info(chunks)")}
         if "season" not in chunk_columns:
@@ -593,7 +603,9 @@ class MediaMemoryDB:
         return int(row["next_index"])
 
     def _next_legacy_id(self, table: str) -> int:
-        row = self.conn.execute(f"SELECT COALESCE(MAX(legacy_id), 0) + 1 AS next_id FROM {table}").fetchone()
+        row = self.conn.execute(
+            f"SELECT COALESCE(MAX(legacy_id), 0) + 1 AS next_id FROM {table}"
+        ).fetchone()
         return int(row["next_id"])
 
 
@@ -617,7 +629,9 @@ def _load_state_history(value: str | None) -> list[dict[str, str | None]]:
     history: list[dict[str, str | None]] = []
     for item in loaded:
         if isinstance(item, dict):
-            history.append({str(key): None if val is None else str(val) for key, val in item.items()})
+            history.append(
+                {str(key): None if val is None else str(val) for key, val in item.items()}
+            )
     return history
 
 

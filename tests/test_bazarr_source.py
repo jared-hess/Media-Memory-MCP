@@ -21,7 +21,14 @@ class FailingBazarrClient:
 
 def test_disabled_bazarr_performs_zero_api_calls(tmp_path: Path) -> None:
     client = FailingBazarrClient()
-    source = BazarrSubtitleSource(enabled=False, url="https://bazarr.example", api_key="secret", api_enabled=True, roots=[tmp_path], client=client)
+    source = BazarrSubtitleSource(
+        enabled=False,
+        url="https://bazarr.example",
+        api_key="secret",
+        api_enabled=True,
+        roots=[tmp_path],
+        client=client,
+    )
     item = MediaItem(title="Movie", path=tmp_path / "Movie.mkv", kind="movie")
 
     assert source.find(item) == []
@@ -36,7 +43,9 @@ def test_bazarr_filesystem_mode_discovers_sidecar_without_api_calls(tmp_path: Pa
     subtitle_path = tmp_path / "media" / "Movie.en.srt"
     media_path.parent.mkdir()
     media_path.write_bytes(b"fake video")
-    subtitle_path.write_text("1\n00:00:01,000 --> 00:00:02,000\nBazarr sidecar.\n", encoding="utf-8")
+    subtitle_path.write_text(
+        "1\n00:00:01,000 --> 00:00:02,000\nBazarr sidecar.\n", encoding="utf-8"
+    )
     source = BazarrSubtitleSource(enabled=True, api_enabled=False, client=client)
 
     candidates = source.find(MediaItem(title="Movie", path=media_path, kind="movie"))

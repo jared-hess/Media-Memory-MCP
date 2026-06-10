@@ -12,14 +12,23 @@ from media_memory.subtitle_sources.embedded import EmbeddedSubtitleSource
 
 
 class FakeCommandRunner:
-    def __init__(self, *, extract_content: str = "1\n00:00:01,000 --> 00:00:02,000\nEmbedded line.\n") -> None:
+    def __init__(
+        self, *, extract_content: str = "1\n00:00:01,000 --> 00:00:02,000\nEmbedded line.\n"
+    ) -> None:
         self.extract_content = extract_content
         self.commands: list[list[str]] = []
 
     def __call__(self, command: list[str]) -> subprocess.CompletedProcess[str]:
         self.commands.append(command)
         if command[0] == "ffprobe":
-            return subprocess.CompletedProcess(command, 0, stdout=json.dumps({"streams": [{"index": 2, "tags": {"language": "eng", "title": "English"}}]}), stderr="")
+            return subprocess.CompletedProcess(
+                command,
+                0,
+                stdout=json.dumps(
+                    {"streams": [{"index": 2, "tags": {"language": "eng", "title": "English"}}]}
+                ),
+                stderr="",
+            )
         if command[0] == "ffmpeg":
             Path(command[-1]).write_text(self.extract_content, encoding="utf-8")
             return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
@@ -38,12 +47,16 @@ class FailingCommandRunner:
 
 def test_disabled_embedded_subtitles_perform_zero_ffprobe_or_ffmpeg_calls(tmp_path: Path) -> None:
     runner = FailingCommandRunner()
-    source = EmbeddedSubtitleSource(enabled=False, extract_with_ffmpeg=True, extract_to=tmp_path / "cache", runner=runner)
+    source = EmbeddedSubtitleSource(
+        enabled=False, extract_with_ffmpeg=True, extract_to=tmp_path / "cache", runner=runner
+    )
     item = MediaItem(title="Movie", path=tmp_path / "media" / "Movie.mkv", kind="movie")
 
     assert source.find(item) == []
     with pytest.raises(ProviderError, match="disabled"):
-        source.fetch(_embedded_candidate(tmp_path / "media" / "Movie.mkv", tmp_path / "cache" / "Movie.srt"))
+        source.fetch(
+            _embedded_candidate(tmp_path / "media" / "Movie.mkv", tmp_path / "cache" / "Movie.srt")
+        )
     assert runner.calls == 0
 
 
@@ -54,7 +67,9 @@ def test_embedded_extraction_writes_only_under_configured_cache_dir(tmp_path: Pa
     media_path = media_dir / "Movie.mkv"
     media_path.write_bytes(b"fake video")
     runner = FakeCommandRunner()
-    source = EmbeddedSubtitleSource(enabled=True, extract_with_ffmpeg=True, extract_to=cache_dir, runner=runner)
+    source = EmbeddedSubtitleSource(
+        enabled=True, extract_with_ffmpeg=True, extract_to=cache_dir, runner=runner
+    )
     item = MediaItem(title="Movie", path=media_path, kind="movie")
 
     candidates = source.find(item)
@@ -77,7 +92,12 @@ def test_embedded_extraction_writes_only_under_configured_cache_dir(tmp_path: Pa
 def test_embedded_fetch_rejects_candidate_paths_outside_cache(tmp_path: Path) -> None:
     media_path = tmp_path / "media" / "Movie.mkv"
     outside_path = tmp_path / "media" / "Movie.srt"
-    source = EmbeddedSubtitleSource(enabled=True, extract_with_ffmpeg=True, extract_to=tmp_path / "cache", runner=FakeCommandRunner())
+    source = EmbeddedSubtitleSource(
+        enabled=True,
+        extract_with_ffmpeg=True,
+        extract_to=tmp_path / "cache",
+        runner=FakeCommandRunner(),
+    )
 
     with pytest.raises(ProviderError, match="cache directory"):
         source.fetch(_embedded_candidate(media_path, outside_path))

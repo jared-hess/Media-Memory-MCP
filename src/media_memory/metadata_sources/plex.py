@@ -11,7 +11,9 @@ class PlexMetadataSource:
 
     provider_name = "plex"
 
-    def __init__(self, *, enabled: bool = False, url: str | None = None, token: str | None = None) -> None:
+    def __init__(
+        self, *, enabled: bool = False, url: str | None = None, token: str | None = None
+    ) -> None:
         self.enabled = enabled
         self.url = url
         self.token = token
@@ -37,7 +39,14 @@ class PlexMetadataSource:
                 source_kind="metadata",
                 provider=self.provider_name,
                 provider_ids={"source_provider": self.provider_name, "plex_rating_key": rating_key},
-                provider_refs=[{"provider": self.provider_name, "id": rating_key, "namespace": "rating-key", "raw": raw}],
+                provider_refs=[
+                    {
+                        "provider": self.provider_name,
+                        "id": rating_key,
+                        "namespace": "rating-key",
+                        "raw": raw,
+                    }
+                ],
                 checksum=hashlib.sha256(text.encode("utf-8")).hexdigest(),
             )
         ]

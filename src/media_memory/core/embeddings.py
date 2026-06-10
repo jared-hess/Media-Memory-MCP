@@ -44,7 +44,9 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
 
     def __init__(self, api_key: str | None, *, dimensions: int | None = None) -> None:
         if not api_key:
-            raise EmbeddingProviderConfigError("OpenAI embeddings require embeddings.api_key when provider is 'openai'.")
+            raise EmbeddingProviderConfigError(
+                "OpenAI embeddings require embeddings.api_key when provider is 'openai'."
+            )
         from openai import OpenAI
 
         self.client = OpenAI(api_key=api_key)

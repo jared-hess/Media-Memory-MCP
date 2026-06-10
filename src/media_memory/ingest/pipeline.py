@@ -50,7 +50,9 @@ class IngestPipeline:
                 metadata_documents = self._find_metadata_documents(refined_item)
                 for document in metadata_documents:
                     before_documents = self.db.count_documents()
-                    new_chunks, failed = self._ingest_metadata_document(refined_item, media_id, document, seen_jobs)
+                    new_chunks, failed = self._ingest_metadata_document(
+                        refined_item, media_id, document, seen_jobs
+                    )
                     stats["new_chunks"] += new_chunks
                     stats["failed_jobs"] += failed
                     if self.db.count_documents() > before_documents:
@@ -67,7 +69,9 @@ class IngestPipeline:
                     continue
                 for subtitle_path in subtitle_paths:
                     before_documents = self.db.count_documents()
-                    new_chunks, failed = self._ingest_subtitle(refined_item, media_id, Path(subtitle_path), seen_jobs)
+                    new_chunks, failed = self._ingest_subtitle(
+                        refined_item, media_id, Path(subtitle_path), seen_jobs
+                    )
                     stats["new_chunks"] += new_chunks
                     stats["failed_jobs"] += failed
                     if self.db.count_documents() > before_documents:
@@ -210,7 +214,9 @@ class IngestPipeline:
     ) -> tuple[int, int]:
         try:
             source_path = Path(document.source_path)
-            checksum = document.checksum or (_file_sha256(source_path) if source_path.exists() else _text_sha256(document.text))
+            checksum = document.checksum or (
+                _file_sha256(source_path) if source_path.exists() else _text_sha256(document.text)
+            )
             chunk = SubtitleChunk(
                 media_path=str(item.path),
                 subtitle_path=document.source_path,
@@ -253,11 +259,15 @@ class IngestPipeline:
             seen_jobs.add(failed_job)
             return 0, 1
 
-    def _index_chunks(self, media_id: int, chunks: list[SubtitleChunk], subtitle_checksum: str) -> int:
+    def _index_chunks(
+        self, media_id: int, chunks: list[SubtitleChunk], subtitle_checksum: str
+    ) -> int:
         new_chunks = 0
         for chunk in chunks:
             text_hash = _text_sha256(chunk.text)
-            chunk_id = self.db.insert_chunk(media_id, chunk, text_hash, document_checksum=subtitle_checksum)
+            chunk_id = self.db.insert_chunk(
+                media_id, chunk, text_hash, document_checksum=subtitle_checksum
+            )
             if chunk_id is None:
                 continue
             metadata_row = self.db.get_chunk_vector_metadata(chunk_id)
@@ -294,8 +304,12 @@ def _refine_media_item(item: MediaItem) -> MediaItem:
             "season": item.season if item.season is not None else identified.season,
             "episode": item.episode if item.episode is not None else identified.episode,
             "show_title": item.show_title or identified.show_title,
-            "season_number": item.season_number if item.season_number is not None else identified.season_number,
-            "episode_number": item.episode_number if item.episode_number is not None else identified.episode_number,
+            "season_number": item.season_number
+            if item.season_number is not None
+            else identified.season_number,
+            "episode_number": item.episode_number
+            if item.episode_number is not None
+            else identified.episode_number,
             "episode_title": item.episode_title or identified.episode_title,
             "year": item.year if item.year is not None else identified.year,
         }

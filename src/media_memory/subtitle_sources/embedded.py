@@ -65,10 +65,16 @@ class EmbeddedSubtitleSource:
             return []
         result = self.runner(_ffprobe_command(item.path))
         if result.returncode != 0:
-            raise ProviderError(f"ffprobe failed for embedded subtitles: {result.stderr.strip() or result.returncode}")
+            raise ProviderError(
+                f"ffprobe failed for embedded subtitles: {result.stderr.strip() or result.returncode}"
+            )
         streams = _subtitle_streams(result.stdout)
         candidates = [self._candidate_from_stream(item, stream) for stream in streams]
-        return [candidate for candidate in candidates if candidate.language in self.languages or candidate.language is None]
+        return [
+            candidate
+            for candidate in candidates
+            if candidate.language in self.languages or candidate.language is None
+        ]
 
     def fetch(self, candidate: Path | SubtitleCandidate | ProviderCandidate) -> Path:
         if isinstance(candidate, Path):
@@ -78,8 +84,14 @@ class EmbeddedSubtitleSource:
                 raise ProviderError("Non-embedded candidate does not include a local path.")
             return candidate.path
         if not self.enabled or not self.extract_with_ffmpeg:
-            raise ProviderError("Embedded subtitle extraction requested while provider is disabled.")
-        provider_data = candidate.raw.get(PROVIDER_NAME) if isinstance(candidate, (SubtitleCandidate, ProviderCandidate)) else None
+            raise ProviderError(
+                "Embedded subtitle extraction requested while provider is disabled."
+            )
+        provider_data = (
+            candidate.raw.get(PROVIDER_NAME)
+            if isinstance(candidate, (SubtitleCandidate, ProviderCandidate))
+            else None
+        )
         if not isinstance(provider_data, Mapping):
             raise ProviderError("Embedded subtitle candidate is missing provider metadata.")
         media_path = Path(_required_string(provider_data, "media_path"))
@@ -93,7 +105,9 @@ class EmbeddedSubtitleSource:
         target_path.parent.mkdir(parents=True, exist_ok=True)
         result = self.runner(_ffmpeg_command(media_path, stream_index, target_path))
         if result.returncode != 0:
-            raise ProviderError(f"ffmpeg failed for embedded subtitles: {result.stderr.strip() or result.returncode}")
+            raise ProviderError(
+                f"ffmpeg failed for embedded subtitles: {result.stderr.strip() or result.returncode}"
+            )
         if not target_path.exists():
             raise ProviderError("ffmpeg completed but did not create an extracted subtitle file.")
         checksum = hashlib.sha256(target_path.read_bytes()).hexdigest()
@@ -106,7 +120,9 @@ class EmbeddedSubtitleSource:
             checksum=checksum,
             path=str(target_path),
         )
-        self._metadata_path(target_path).write_text(json.dumps(asdict(metadata), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        self._metadata_path(target_path).write_text(
+            json.dumps(asdict(metadata), indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
         return target_path
 
     def metadata_for(self, subtitle_path: Path | str) -> EmbeddedSubtitleMetadata | None:
@@ -118,7 +134,9 @@ class EmbeddedSubtitleSource:
         data = json.loads(metadata_path.read_text(encoding="utf-8"))
         return EmbeddedSubtitleMetadata(**data)
 
-    def _candidate_from_stream(self, item: MediaItem, stream: Mapping[str, Any]) -> SubtitleCandidate:
+    def _candidate_from_stream(
+        self, item: MediaItem, stream: Mapping[str, Any]
+    ) -> SubtitleCandidate:
         stream_index = int(stream.get("index", -1))
         if stream_index < 0:
             raise ProviderError("ffprobe returned a subtitle stream without an index.")
@@ -177,7 +195,17 @@ def _ffprobe_command(media_path: Path) -> list[str]:
 
 
 def _ffmpeg_command(media_path: Path, stream_index: int, target_path: Path) -> list[str]:
-    return ["ffmpeg", "-y", "-i", str(media_path), "-map", f"0:{stream_index}", "-c:s", "srt", str(target_path)]
+    return [
+        "ffmpeg",
+        "-y",
+        "-i",
+        str(media_path),
+        "-map",
+        f"0:{stream_index}",
+        "-c:s",
+        "srt",
+        str(target_path),
+    ]
 
 
 def _subtitle_streams(ffprobe_stdout: str) -> list[Mapping[str, Any]]:
@@ -196,7 +224,10 @@ def _media_key(media_path: Path) -> str:
 
 
 def _safe_part(value: str) -> str:
-    safe = "".join(character if character.isalnum() or character in {"-", "_"} else "-" for character in value.strip())
+    safe = "".join(
+        character if character.isalnum() or character in {"-", "_"} else "-"
+        for character in value.strip()
+    )
     return safe.strip("-_") or "subtitle"
 
 
@@ -204,7 +235,9 @@ def _ensure_under_directory(path: Path, directory: Path) -> None:
     try:
         path.resolve().relative_to(directory.resolve())
     except ValueError as exc:
-        raise ProviderError("Embedded subtitle extraction target must stay under the configured cache directory.") from exc
+        raise ProviderError(
+            "Embedded subtitle extraction target must stay under the configured cache directory."
+        ) from exc
 
 
 def _required_string(data: Mapping[str, object], key: str) -> str:

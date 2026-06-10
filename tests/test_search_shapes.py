@@ -16,7 +16,9 @@ class SearchShapeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             db = MediaMemoryDB(Path(tmp) / "test.db")
             db.init_schema()
-            media_id = db.upsert_media_item(path="/media/Show.S01E01.mkv", title="Show S01E01", kind="episode")
+            media_id = db.upsert_media_item(
+                path="/media/Show.S01E01.mkv", title="Show S01E01", kind="episode"
+            )
             chunk = SubtitleChunk(
                 media_path="/media/Show.S01E01.mkv",
                 subtitle_path="/media/Show.S01E01.srt",

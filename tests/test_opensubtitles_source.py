@@ -12,7 +12,9 @@ from media_memory.subtitle_sources.opensubtitles import OpenSubtitlesSource
 
 
 class FakeOpenSubtitlesClient:
-    def __init__(self, search_results: list[dict[str, Any]] | None = None, content: bytes | None = None) -> None:
+    def __init__(
+        self, search_results: list[dict[str, Any]] | None = None, content: bytes | None = None
+    ) -> None:
         self.search_results = search_results or []
         self.content = content or b"1\n00:00:01,000 --> 00:00:02,000\nHello from cache.\n"
         self.auth_calls: list[dict[str, str]] = []
@@ -56,7 +58,14 @@ class FailingOpenSubtitlesClient:
 
 def test_disabled_opensubtitles_performs_zero_auth_search_or_download_calls(tmp_path: Path) -> None:
     client = FailingOpenSubtitlesClient()
-    source = OpenSubtitlesSource(enabled=False, api_key="key", username="user", password="pass", cache_dir=tmp_path, client=client)
+    source = OpenSubtitlesSource(
+        enabled=False,
+        api_key="key",
+        username="user",
+        password="pass",
+        cache_dir=tmp_path,
+        client=client,
+    )
     item = MediaItem(title="Movie", path=tmp_path / "Movie.mkv", kind="movie")
 
     assert source.find(item) == []
@@ -67,7 +76,14 @@ def test_disabled_opensubtitles_performs_zero_auth_search_or_download_calls(tmp_
 
 def test_enabled_opensubtitles_requires_complete_credentials_before_network(tmp_path: Path) -> None:
     client = FakeOpenSubtitlesClient()
-    source = OpenSubtitlesSource(enabled=True, api_key="key", username="user", password=None, cache_dir=tmp_path, client=client)
+    source = OpenSubtitlesSource(
+        enabled=True,
+        api_key="key",
+        username="user",
+        password=None,
+        cache_dir=tmp_path,
+        client=client,
+    )
     item = MediaItem(title="Movie", path=tmp_path / "Movie.mkv", kind="movie")
 
     with pytest.raises(ProviderError, match="missing credentials: password"):
@@ -81,26 +97,42 @@ def test_enabled_opensubtitles_requires_complete_credentials_before_network(tmp_
 def test_search_uses_imdb_id_when_available(tmp_path: Path) -> None:
     client = FakeOpenSubtitlesClient([_raw_result("sub-1", "file-1", score=0.95)])
     source = _enabled_source(tmp_path, client)
-    item = MediaItem(title="The Matrix", path=tmp_path / "The.Matrix.1999.mkv", kind="movie", provider_ids={"imdb": "tt0133093"})
+    item = MediaItem(
+        title="The Matrix",
+        path=tmp_path / "The.Matrix.1999.mkv",
+        kind="movie",
+        provider_ids={"imdb": "tt0133093"},
+    )
 
     candidates = source.find(item)
 
     assert len(candidates) == 1
-    assert client.search_calls == [{"languages": "eng,en", "hearing_impaired": "exclude", "imdb_id": "0133093"}]
+    assert client.search_calls == [
+        {"languages": "eng,en", "hearing_impaired": "exclude", "imdb_id": "0133093"}
+    ]
 
 
 def test_search_falls_back_to_title_year_and_episode_metadata(tmp_path: Path) -> None:
     movie_client = FakeOpenSubtitlesClient([_raw_result("movie-sub", "movie-file", score=0.95)])
     movie_source = _enabled_source(tmp_path / "movie", movie_client)
-    movie = MediaItem(title="Example Movie", path=tmp_path / "Example.Movie.1984.mkv", kind="movie", year=1984)
+    movie = MediaItem(
+        title="Example Movie", path=tmp_path / "Example.Movie.1984.mkv", kind="movie", year=1984
+    )
 
     movie_source.find(movie)
 
     assert movie_client.search_calls == [
-        {"languages": "eng,en", "hearing_impaired": "exclude", "query": "Example Movie", "year": 1984}
+        {
+            "languages": "eng,en",
+            "hearing_impaired": "exclude",
+            "query": "Example Movie",
+            "year": 1984,
+        }
     ]
 
-    episode_client = FakeOpenSubtitlesClient([_raw_result("episode-sub", "episode-file", score=0.95)])
+    episode_client = FakeOpenSubtitlesClient(
+        [_raw_result("episode-sub", "episode-file", score=0.95)]
+    )
     episode_source = _enabled_source(tmp_path / "episode", episode_client)
     episode = MediaItem(
         title="Pilot",
@@ -150,7 +182,9 @@ def test_daily_download_budget_is_enforced_before_download(tmp_path: Path) -> No
 
 def test_cached_subtitle_is_reused_on_rerun_and_metadata_is_recorded(tmp_path: Path) -> None:
     subtitle_content = b"1\n00:00:01,000 --> 00:00:02,000\nCached subtitle.\n"
-    client = FakeOpenSubtitlesClient([_raw_result("sub-1", "file-1", score=0.96, license_status="trusted")], subtitle_content)
+    client = FakeOpenSubtitlesClient(
+        [_raw_result("sub-1", "file-1", score=0.96, license_status="trusted")], subtitle_content
+    )
     source = _enabled_source(tmp_path, client)
     item = MediaItem(title="Movie", path=tmp_path / "Movie.mkv", kind="movie")
 
@@ -203,7 +237,9 @@ def _enabled_source(
     )
 
 
-def _raw_result(subtitle_id: str, file_id: str, *, score: float, license_status: str = "trusted") -> dict[str, Any]:
+def _raw_result(
+    subtitle_id: str, file_id: str, *, score: float, license_status: str = "trusted"
+) -> dict[str, Any]:
     return {
         "id": subtitle_id,
         "attributes": {
@@ -216,7 +252,9 @@ def _raw_result(subtitle_id: str, file_id: str, *, score: float, license_status:
 
 
 def _candidate(subtitle_id: str, file_id: str, *, confidence: float = 0.95):
-    return OpenSubtitlesSource(enabled=True, api_key="key", username="user", password="pass")._candidate_from_result(
+    return OpenSubtitlesSource(
+        enabled=True, api_key="key", username="user", password="pass"
+    )._candidate_from_result(
         MediaItem(title="Movie", path=Path("/media/Movie.mkv"), kind="movie"),
         _raw_result(subtitle_id, file_id, score=confidence),
     )

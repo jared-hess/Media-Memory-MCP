@@ -48,12 +48,19 @@ class BazarrSubtitleSource:
     def find_for_media(self, item: MediaItem) -> list[SubtitleCandidate]:
         if not self.enabled:
             return []
-        candidates = [self._candidate_from_path(path, mode="sidecar") for path in self._local_source.find(item)]
-        candidates.extend(self._candidate_from_path(path, mode="root") for path in self._find_in_roots(item))
+        candidates = [
+            self._candidate_from_path(path, mode="sidecar")
+            for path in self._local_source.find(item)
+        ]
+        candidates.extend(
+            self._candidate_from_path(path, mode="root") for path in self._find_in_roots(item)
+        )
         if not self.api_enabled:
             return _dedupe_candidates(candidates)
         if self.client is None:
-            raise ProviderError("Bazarr API mode is enabled but no Bazarr API client is configured.")
+            raise ProviderError(
+                "Bazarr API mode is enabled but no Bazarr API client is configured."
+            )
         return _dedupe_candidates([*candidates, *self.client.find(item)])
 
     def fetch(self, candidate: Path | SubtitleCandidate | ProviderCandidate) -> Path:
@@ -78,7 +85,11 @@ class BazarrSubtitleSource:
             if not root.exists() or not root.is_dir():
                 continue
             for path in sorted(root.rglob("*")):
-                if path.is_symlink() or not path.is_file() or path.suffix.lower() not in self.extensions:
+                if (
+                    path.is_symlink()
+                    or not path.is_file()
+                    or path.suffix.lower() not in self.extensions
+                ):
                     continue
                 if path.stem == media_stem or path.name.startswith(f"{media_stem}."):
                     matches.append(path)
@@ -91,7 +102,13 @@ class BazarrSubtitleSource:
             language=_language_hint(path),
             provider=PROVIDER_NAME,
             score=1.0,
-            raw={PROVIDER_NAME: {"mode": mode, "path": str(path), "provenance": "bazarr-filesystem-subtitle"}},
+            raw={
+                PROVIDER_NAME: {
+                    "mode": mode,
+                    "path": str(path),
+                    "provenance": "bazarr-filesystem-subtitle",
+                }
+            },
         )
 
 

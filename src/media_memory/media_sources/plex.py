@@ -87,7 +87,9 @@ class PlexMediaSource:
         if not self.enabled:
             return []
         root = self._xml(f"/library/sections/{parse.quote(library_key)}/all")
-        return [item for video in root.iter("Video") if (item := _item_from_video(video)) is not None]
+        return [
+            item for video in root.iter("Video") if (item := _item_from_video(video)) is not None
+        ]
 
     def _library_selected(self, library: PlexLibrary) -> bool:
         if not self.libraries:
@@ -126,7 +128,9 @@ def _item_from_video(video: ElementTree.Element) -> MediaItem | None:
     provider_ids = {"plex_rating_key": rating_key} if rating_key else {}
     provider_refs = []
     if rating_key:
-        provider_refs.append({"provider": "plex", "id": rating_key, "namespace": "rating-key", "raw": raw})
+        provider_refs.append(
+            {"provider": "plex", "id": rating_key, "namespace": "rating-key", "raw": raw}
+        )
 
     return MediaItem(
         title=title,

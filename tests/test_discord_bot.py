@@ -6,12 +6,19 @@ from typing import Any
 from urllib import error
 
 from media_memory.config import MediaMemoryConfig
-from media_memory.discord_bot import DiscordBotDisabled, MediaMemoryDiscordBot, RestClientError, create_discord_bot
+from media_memory.discord_bot import (
+    DiscordBotDisabled,
+    MediaMemoryDiscordBot,
+    RestClientError,
+    create_discord_bot,
+)
 from media_memory.discord_bot.bot import UrlLibSearchRestClient
 
 
 class FakeRestClient:
-    def __init__(self, payload: dict[str, Any] | None = None, *, error: Exception | None = None) -> None:
+    def __init__(
+        self, payload: dict[str, Any] | None = None, *, error: Exception | None = None
+    ) -> None:
         self.payload = payload or {"results": []}
         self.error = error
         self.calls: list[dict[str, Any]] = []

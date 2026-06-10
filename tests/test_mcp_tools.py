@@ -27,7 +27,9 @@ def test_search_media_tool_matches_core_search_result_shape(tmp_path: Path) -> N
             tool_payload = dispatcher.call_tool("search_media", query="winter coming", limit=5)
         finally:
             dispatcher.services.close()
-        core_payload = [item.to_dict() for item in services.search.search_media("winter coming", limit=5)]
+        core_payload = [
+            item.to_dict() for item in services.search.search_media("winter coming", limit=5)
+        ]
 
         assert tool_payload["results"] == core_payload
         assert tool_payload["results"][0]["evidences"][0]["chunk_id"] == chunk_id
@@ -122,7 +124,7 @@ embeddings:
   dimensions: 8
 index:
   sqlite_path: {db_path.as_posix()}
-  vector_path: {(tmp_path / 'vectors').as_posix()}
+  vector_path: {(tmp_path / "vectors").as_posix()}
 media_sources:
   - type: filesystem
     enabled: true
