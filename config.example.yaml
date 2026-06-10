@@ -1,0 +1,112 @@
+app:
+  name: media-memory-mcp
+  environment: local
+  data_dir: /data
+  log_level: info
+  corpus_id: local
+
+mcp:
+  transport: stdio
+  allow_ingest_tools: false
+  read_only_resources: true
+
+api:
+  enabled: false
+  host: 127.0.0.1
+  port: 8765
+
+discord:
+  enabled: false
+  token: ${DISCORD_BOT_TOKEN}
+  api_base_url: http://127.0.0.1:8765
+  default_limit: 3
+
+media_sources:
+  - type: filesystem
+    enabled: true
+    name: local-filesystem
+    roots:
+      - /media
+    read_only: true
+    extensions:
+      - .mkv
+      - .mp4
+      - .avi
+      - .mov
+  - type: plex
+    enabled: false
+    url: ${PLEX_BASE_URL}
+    token: ${PLEX_TOKEN}
+    libraries: []
+
+subtitle_sources:
+  local:
+    enabled: true
+    roots:
+      - /media
+    sidecar_extensions:
+      - .srt
+      - .vtt
+      - .ass
+      - .ssa
+    read_only: true
+  embedded:
+    enabled: false
+    extract_with_ffmpeg: false
+    extract_to: /data/subtitles/embedded
+    languages:
+      - eng
+      - en
+  opensubtitles:
+    enabled: false
+    api_key: ${OPENSUBTITLES_API_KEY}
+    username: ${OPENSUBTITLES_USERNAME}
+    password: ${OPENSUBTITLES_PASSWORD}
+    languages:
+      - eng
+      - en
+    hearing_impaired: false
+    daily_download_budget: 900
+    min_match_confidence: 0.85
+    cache_dir: /data/subtitles/opensubtitles
+  bazarr:
+    enabled: false
+    url: ${BAZARR_BASE_URL}
+    api_key: ${BAZARR_API_KEY}
+    api_enabled: false
+    roots:
+      - /bazarr
+    sidecar_extensions:
+      - .srt
+      - .vtt
+      - .ass
+      - .ssa
+
+metadata:
+  prefer:
+    - plex
+    - filename
+    - tmdb
+    - tvmaze
+  fetch_external: false
+
+embeddings:
+  provider: mock
+  model: mock
+  batch_size: 128
+  api_key: ${OPENAI_API_KEY}
+  dimensions: 16
+
+index:
+  metadata_db: sqlite
+  sqlite_path: /data/media-memory.sqlite
+  vector_db: lancedb
+  vector_path: /data/vectors
+
+search:
+  default_limit: 5
+  max_limit: 50
+  lexical_weight: 0.45
+  vector_weight: 0.45
+  metadata_boost_weight: 0.10
+  cache_results: true
