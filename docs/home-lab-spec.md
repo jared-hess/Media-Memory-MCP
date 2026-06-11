@@ -12,6 +12,15 @@ Media Memory MCP is currently a local-first MVP scaffold for indexing personal m
 - Filesystem media roots are treated as read-only inputs.
 - `index.sqlite_path` defaults to `/data/media-memory.sqlite`, and `index.vector_path` defaults to `/data/vectors` for rebuildable LanceDB vector data.
 
+The container runtime identity is user `media-memory` with UID/GID `10001:10001`. The host bind mount for `/data` must be writable by this UID/GID so the app can persist databases and vectors.
+
+For the default local compose layout, prepare host directories with:
+
+```bash
+mkdir -p config data media bazarr
+chown -R 10001:10001 data
+```
+
 ## Expected mounts
 
 For containerized home-lab deployment, mount paths follow this model:
@@ -21,7 +30,9 @@ For containerized home-lab deployment, mount paths follow this model:
 - `/data`: read-write application data mount for SQLite, derived indexes, logs, and caches.
 - `/bazarr`: optional read-only subtitle export mount for future Bazarr integration work.
 
-The compose service runs `media-memory mcp --config /config/config.yaml` over stdio. It does not publish an HTTP MCP port, and media/config/Bazarr inputs stay read-only while `/data` remains writable.
+The compose service runs `media-memory mcp --config /config/config.yaml` over stdio as `user: "${PUID:-10001}:${PGID:-10001}"`. It does not publish an HTTP MCP port, and media/config/Bazarr inputs stay read-only while `/data` remains writable.
+
+`/config`, `/media`, and `/bazarr` are read-only mounts by design. Operators may set `PUID`/`PGID` to align the compose service with an existing host `/data` owner; otherwise it uses UID/GID `10001:10001`.
 
 ## Operational status checks
 

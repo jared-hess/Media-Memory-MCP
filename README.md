@@ -62,12 +62,21 @@ For compose, create local host directories and place a safe config at `./config/
 
 ```bash
 mkdir -p config data media bazarr
+chown -R 10001:10001 data
 cp config.example.yaml config/config.yaml
 docker compose config
 docker compose up media-memory
 ```
 
-`docker-compose.yml` runs `media-memory mcp --config /config/config.yaml` over stdio by default. It mounts `/config` read-only, `/media` read-only, optional `/bazarr` read-only, and `/data` read-write for SQLite, vectors, caches, and derived subtitle files. Override `MEDIA_LIBRARY_PATH` or `BAZARR_SUBTITLE_PATH` to point at existing host directories; do not mount media read-write.
+`docker-compose.yml` runs `media-memory mcp --config /config/config.yaml` over stdio by default as UID/GID `10001:10001` through `user: "${PUID:-10001}:${PGID:-10001}"`. It mounts `/config` read-only, `/media` read-only, optional `/bazarr` read-only, and `/data` read-write for SQLite, vectors, caches, and derived subtitle files. Override `MEDIA_LIBRARY_PATH` or `BAZARR_SUBTITLE_PATH` to point at existing host directories; do not mount media read-write.
+
+### Runtime identity and volume write contract
+
+The hardened image runs by default as the non-root `media-memory` user with UID/GID `10001:10001`. Host mounts must allow `/data` writes by `10001:10001` so SQLite, vector data, and derived subtitle artifacts can be created; for the default local compose layout, run `chown -R 10001:10001 data` after creating the directories.
+
+`/config`, `/media`, and `/bazarr` are intentionally designed as read-only mounts. The container should not need to write to those paths, and only `/data` is treated as the writable application path.
+
+Compose includes `user: "${PUID:-10001}:${PGID:-10001}"` so operators can align container writes with host ownership by exporting `PUID` and `PGID` when a different writable `/data` owner is required.
 
 Operational status is available from the CLI and is safe to emit as JSON because it reports provider enablement flags and model/provider names, not tokens or service URLs:
 

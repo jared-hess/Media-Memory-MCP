@@ -4,6 +4,7 @@ services:
       context: .
     image: media-memory-mcp:local
     command: ["media-memory", "mcp", "--config", "/config/config.yaml"]
+    user: "${PUID:-10001}:${PGID:-10001}"
     volumes:
       - type: bind
         source: ./config
