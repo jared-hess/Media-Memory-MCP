@@ -8,7 +8,12 @@ import typer
 
 from media_memory.config import MediaMemoryConfig, load_config
 from media_memory.core.db import MediaMemoryDB
-from media_memory.core.embeddings import EmbeddingProvider, EmbeddingProviderConfigError, MockEmbeddingProvider, OpenAIEmbeddingProvider
+from media_memory.core.embeddings import (
+    EmbeddingProvider,
+    EmbeddingProviderConfigError,
+    MockEmbeddingProvider,
+    OpenAIEmbeddingProvider,
+)
 from media_memory.core.models import SearchFilters
 from media_memory.core.search import SearchService
 from media_memory.core.vector_store import LanceVectorStore, VectorStore
@@ -96,7 +101,9 @@ class LocalToolDispatcher:
         if self.services.config.mcp.allow_ingest_tools:
             dispatch["ingest_library"] = self.ingest_library
         if tool_name not in dispatch:
-            raise ValueError(f"Unknown tool: {tool_name}. Available tools: {', '.join(sorted(dispatch))}")
+            raise ValueError(
+                f"Unknown tool: {tool_name}. Available tools: {', '.join(sorted(dispatch))}"
+            )
         return dispatch[tool_name](**kwargs)
 
 
@@ -176,7 +183,9 @@ def register_tools(app: Any, services: McpServices) -> None:
         return search_dialogue_payload(services, query=query, limit=limit)
 
     @app.tool()
-    def get_media(media_id: int | str | None = None, media_path: str | None = None) -> dict[str, object]:
+    def get_media(
+        media_id: int | str | None = None, media_path: str | None = None
+    ) -> dict[str, object]:
         """Return one indexed media item by ID or path."""
 
         return get_media_payload(services, media_id=media_id, media_path=media_path)
@@ -206,7 +215,13 @@ def search_media_payload(
     show: str | None = None,
 ) -> dict[str, object]:
     result_limit = _safe_limit(services.config, limit)
-    filters = SearchFilters(corpus_id=services.config.app.corpus_id, kind=kind, show=show, show_title=show, limit=result_limit)
+    filters = SearchFilters(
+        corpus_id=services.config.app.corpus_id,
+        kind=kind,
+        show=show,
+        show_title=show,
+        limit=result_limit,
+    )
     results = services.search.search_media(query, limit=result_limit, filters=filters)
     return {"query": query, "results": [item.to_dict() for item in results]}
 
@@ -221,7 +236,9 @@ def find_episode_payload(
 ) -> dict[str, object]:
     result_limit = _safe_limit(services.config, limit)
     filters = SearchFilters(corpus_id=services.config.app.corpus_id)
-    results = services.search.find_episode(query, season=season, episode=episode, limit=result_limit, filters=filters)
+    results = services.search.find_episode(
+        query, season=season, episode=episode, limit=result_limit, filters=filters
+    )
     return {"query": query, "results": [item.to_dict() for item in results]}
 
 
@@ -304,12 +321,16 @@ def _build_embeddings(config: MediaMemoryConfig) -> EmbeddingProvider:
     if config.embeddings.provider == "mock":
         return MockEmbeddingProvider(dims=config.embeddings.dimensions)
     try:
-        return OpenAIEmbeddingProvider(config.embeddings.api_key, dimensions=config.embeddings.dimensions)
+        return OpenAIEmbeddingProvider(
+            config.embeddings.api_key, dimensions=config.embeddings.dimensions
+        )
     except EmbeddingProviderConfigError as exc:
         raise typer.BadParameter(str(exc)) from exc
 
 
-def _build_vectors(db: MediaMemoryDB, embeddings: EmbeddingProvider, config: MediaMemoryConfig) -> VectorStore:
+def _build_vectors(
+    db: MediaMemoryDB, embeddings: EmbeddingProvider, config: MediaMemoryConfig
+) -> VectorStore:
     vectors = LanceVectorStore(config.index.vector_path)
     vectors.rebuild_from_chunks(db, embeddings)
     return vectors

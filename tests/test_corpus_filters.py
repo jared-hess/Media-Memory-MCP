@@ -15,8 +15,12 @@ def test_search_service_is_isolated_by_corpus_filter(tmp_path: Path) -> None:
     db.init_schema()
     service = SearchService(db)
 
-    local = service.search_media("shared query phrase", limit=10, filters=SearchFilters(corpus_id="local", limit=10))
-    remote = service.search_media("shared query phrase", limit=10, filters=SearchFilters(corpus_id="remote", limit=10))
+    local = service.search_media(
+        "shared query phrase", limit=10, filters=SearchFilters(corpus_id="local", limit=10)
+    )
+    remote = service.search_media(
+        "shared query phrase", limit=10, filters=SearchFilters(corpus_id="remote", limit=10)
+    )
 
     assert len(local) == 1
     assert len(remote) == 1
@@ -36,13 +40,19 @@ def test_mcp_search_payload_respects_configured_corpus_id(tmp_path: Path) -> Non
     remote_services = create_services(remote_config)
     try:
         local_payload = search_media_payload(local_services, query="shared query phrase", limit=10)
-        remote_payload = search_media_payload(remote_services, query="shared query phrase", limit=10)
+        remote_payload = search_media_payload(
+            remote_services, query="shared query phrase", limit=10
+        )
     finally:
         local_services.close()
         remote_services.close()
 
-    local_titles = [result["title"] for result in local_payload["results"]]
-    remote_titles = [result["title"] for result in remote_payload["results"]]
+    local_results = local_payload["results"]
+    remote_results = remote_payload["results"]
+    assert isinstance(local_results, list)
+    assert isinstance(remote_results, list)
+    local_titles = [result["title"] for result in local_results if isinstance(result, dict)]
+    remote_titles = [result["title"] for result in remote_results if isinstance(result, dict)]
 
     assert local_titles == ["Example Local"]
     assert remote_titles == ["Example Remote"]
@@ -106,12 +116,11 @@ embeddings:
   dimensions: 8
 index:
   sqlite_path: {db_path.as_posix()}
-  vector_path: {(tmp_path / 'vectors').as_posix()}
+  vector_path: {(tmp_path / "vectors").as_posix()}
 search:
   default_limit: 10
   max_limit: 20
-"""
-        .strip()
+""".strip()
         + "\n",
         encoding="utf-8",
     )

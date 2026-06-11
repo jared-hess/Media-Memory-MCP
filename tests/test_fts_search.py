@@ -34,7 +34,14 @@ class FTSSearchTests(unittest.TestCase):
                     "SELECT name FROM sqlite_master WHERE type IN ('table', 'virtual')"
                 )
             }
-            for table in {"media_items", "documents", "chunks", "ingest_jobs", "search_cache", "chunks_fts"}:
+            for table in {
+                "media_items",
+                "documents",
+                "chunks",
+                "ingest_jobs",
+                "search_cache",
+                "chunks_fts",
+            }:
                 self.assertIn(table, tables)
 
             self.assertEqual(1, db.conn.execute("PRAGMA foreign_keys").fetchone()[0])
@@ -59,7 +66,9 @@ class FTSSearchTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             db = MediaMemoryDB(Path(tmp) / "test.db")
             db.init_schema()
-            media_id = db.upsert_media_item(path="/media/Show.S01E01.mkv", title="Show S01E01", kind="episode")
+            media_id = db.upsert_media_item(
+                path="/media/Show.S01E01.mkv", title="Show S01E01", kind="episode"
+            )
             chunk = SubtitleChunk(
                 media_path="/media/Show.S01E01.mkv",
                 subtitle_path="/media/Show.S01E01.srt",
@@ -87,8 +96,14 @@ class FTSSearchTests(unittest.TestCase):
             self.assertEqual(3000, rows[0]["end_ms"])
             self.assertGreater(rows[0]["lexical_score"], 0.0)
 
-            self.assertEqual(chunk_id, db.get_chunk_by_id(int(chunk_id))["chunk_id"])
-            self.assertEqual(chunk_id, db.list_chunks_for_media("/media/Show.S01E01.mkv")[0]["chunk_id"])
+            assert chunk_id is not None
+            stored_chunk = db.get_chunk_by_id(int(chunk_id))
+            self.assertIsNotNone(stored_chunk)
+            assert stored_chunk is not None
+            self.assertEqual(chunk_id, stored_chunk["chunk_id"])
+            self.assertEqual(
+                chunk_id, db.list_chunks_for_media("/media/Show.S01E01.mkv")[0]["chunk_id"]
+            )
             self.assertEqual(chunk_id, db.list_all_chunks()[0]["chunk_id"])
             db.close()
 
@@ -129,14 +144,18 @@ class FTSSearchTests(unittest.TestCase):
             rows = db.lexical_search("run")
             self.assertEqual(1, len(rows))
             self.assertEqual(first_id, rows[0]["chunk_id"])
-            self.assertEqual([first_id, second_id], [row["chunk_id"] for row in db.list_all_chunks()])
+            self.assertEqual(
+                [first_id, second_id], [row["chunk_id"] for row in db.list_all_chunks()]
+            )
             db.close()
 
     def test_search_service_uses_fts_only_with_quote_filters_and_cache(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             db = MediaMemoryDB(Path(tmp) / "test.db")
             db.init_schema()
-            local_media = db.upsert_media_item(path="/media/Show.S01E01.mkv", title="Pilot", kind="episode")
+            local_media = db.upsert_media_item(
+                path="/media/Show.S01E01.mkv", title="Pilot", kind="episode"
+            )
             other_media = db.upsert_media_item(
                 path="/archive/Show.S01E02.mkv",
                 title="Second Episode",
@@ -178,7 +197,7 @@ class FTSSearchTests(unittest.TestCase):
             )
             db.conn.execute(
                 "UPDATE media_items SET show_title = ?, provider_ids_json = ? WHERE path = ?",
-                ('Example Show', '{"imdb":"tt-local"}', "/media/Show.S01E01.mkv"),
+                ("Example Show", '{"imdb":"tt-local"}', "/media/Show.S01E01.mkv"),
             )
             db.conn.commit()
             search = SearchService(db, ExplodingEmbeddings(), ExplodingVectors())  # type: ignore[arg-type]
@@ -194,7 +213,10 @@ class FTSSearchTests(unittest.TestCase):
             self.assertIn("blue door", results[0].evidences[0].text.casefold())
             self.assertNotIn("metal", results[0].evidences[0].text.casefold())
             self.assertEqual(1, db.conn.execute("SELECT COUNT(*) FROM search_cache").fetchone()[0])
-            cached = search.search_media('"blue door"', filters=SearchFilters(show="Example", provider_ids={"imdb": "tt-local"}, limit=5))
+            cached = search.search_media(
+                '"blue door"',
+                filters=SearchFilters(show="Example", provider_ids={"imdb": "tt-local"}, limit=5),
+            )
             self.assertEqual(results[0].media_path, cached[0].media_path)
             db.close()
 
@@ -202,7 +224,9 @@ class FTSSearchTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             db = MediaMemoryDB(Path(tmp) / "test.db")
             db.init_schema()
-            media_id = db.upsert_media_item(path="/media/Show.S01E03.mkv", title="Mystery", kind="episode")
+            media_id = db.upsert_media_item(
+                path="/media/Show.S01E03.mkv", title="Mystery", kind="episode"
+            )
             db.insert_chunk(
                 media_id,
                 SubtitleChunk(
@@ -230,8 +254,12 @@ class FTSSearchTests(unittest.TestCase):
             episodes = search.find_episode("project blue")
             scenes = search.search_dialogue("project blue")
 
-            self.assertEqual("summary", episodes[0].evidences[0].subtitle_path.split(".")[-2])
-            self.assertEqual(5000, scenes[0]["evidence"]["start_ms"])
+            subtitle_path = episodes[0].evidences[0].subtitle_path
+            assert subtitle_path is not None
+            self.assertEqual("summary", subtitle_path.split(".")[-2])
+            evidence = scenes[0]["evidence"]
+            assert isinstance(evidence, dict)
+            self.assertEqual(5000, evidence["start_ms"])
             self.assertIn("query", scenes[0])
             self.assertIn("results", scenes[0])
             self.assertIn("confidence", scenes[0])

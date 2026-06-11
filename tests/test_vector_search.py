@@ -4,7 +4,11 @@ import hashlib
 from pathlib import Path
 
 from media_memory.core.db import MediaMemoryDB
-from media_memory.core.embeddings import MockEmbeddingProvider, OpenAIEmbeddingProvider, EmbeddingProviderConfigError
+from media_memory.core.embeddings import (
+    MockEmbeddingProvider,
+    OpenAIEmbeddingProvider,
+    EmbeddingProviderConfigError,
+)
 from media_memory.core.models import SubtitleChunk
 from media_memory.core.vector_store import LanceDBVectorStore, LanceVectorStore
 
@@ -53,13 +57,17 @@ def test_vector_index_can_be_deleted_and_rebuilt_from_sqlite_chunks(tmp_path: Pa
     store = LanceVectorStore(tmp_path / "vectors")
 
     indexed_count = store.rebuild_from_chunks(db, embeddings)
-    first_ids = [chunk_id for chunk_id, _score in store.search(embeddings.embed("hold the door"), limit=5)]
+    first_ids = [
+        chunk_id for chunk_id, _score in store.search(embeddings.embed("hold the door"), limit=5)
+    ]
 
     store.delete_index()
     assert store.search(embeddings.embed("hold the door"), limit=5) == []
 
     rebuilt_count = store.rebuild_from_chunks(db, embeddings)
-    rebuilt_ids = [chunk_id for chunk_id, _score in store.search(embeddings.embed("hold the door"), limit=5)]
+    rebuilt_ids = [
+        chunk_id for chunk_id, _score in store.search(embeddings.embed("hold the door"), limit=5)
+    ]
 
     assert indexed_count == 2
     assert rebuilt_count == 2

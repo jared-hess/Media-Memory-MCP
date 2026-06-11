@@ -5,7 +5,7 @@ from pathlib import Path
 
 from media_memory.core.db import MediaMemoryDB
 from media_memory.core.embeddings import MockEmbeddingProvider
-from media_memory.core.models import MediaItem
+from media_memory.core.models import MediaItem, ProviderRef
 from media_memory.core.vector_store import LanceDBVectorStore
 from media_memory.ingest.pipeline import IngestPipeline
 from media_memory.media_sources.plex import PlexMediaSource
@@ -33,7 +33,9 @@ class FailingPlexClient:
 
 def test_disabled_plex_config_performs_zero_network_calls() -> None:
     client = FailingPlexClient()
-    source = PlexMediaSource(enabled=False, url="http://plex.local:32400", token="token", client=client)
+    source = PlexMediaSource(
+        enabled=False, url="http://plex.local:32400", token="token", client=client
+    )
 
     assert source.scan() == []
     assert source.list_libraries() == []
@@ -72,13 +74,20 @@ def test_plex_lists_libraries_and_maps_movies_and_episodes(tmp_path: Path) -> No
             """,
         }
     )
-    source = PlexMediaSource(enabled=True, url="http://plex.local:32400", token="token", client=client)
+    source = PlexMediaSource(
+        enabled=True, url="http://plex.local:32400", token="token", client=client
+    )
 
     libraries = source.list_libraries()
     items = source.scan()
 
     assert [library.title for library in libraries] == ["Movies", "TV Shows"]
-    assert client.calls == ["/library/sections", "/library/sections", "/library/sections/1/all", "/library/sections/2/all"]
+    assert client.calls == [
+        "/library/sections",
+        "/library/sections",
+        "/library/sections/1/all",
+        "/library/sections/2/all",
+    ]
     movie, episode = items
     assert movie.title == "The Matrix"
     assert movie.path == movie_path
@@ -121,7 +130,13 @@ def test_plex_library_filter_accepts_key_or_title(tmp_path: Path) -> None:
         }
     )
 
-    items = PlexMediaSource(enabled=True, url="http://plex.local:32400", token="token", libraries=["Movies"], client=client).scan()
+    items = PlexMediaSource(
+        enabled=True,
+        url="http://plex.local:32400",
+        token="token",
+        libraries=["Movies"],
+        client=client,
+    ).scan()
 
     assert [item.path for item in items] == [media_path]
     assert "/library/sections/2/all" not in client.calls
@@ -141,12 +156,12 @@ def test_plex_metadata_source_uses_already_fetched_item_data() -> None:
         runtime_seconds=1380,
         provider_ids={"plex_rating_key": "200"},
         provider_refs=[
-            {
-                "provider": "plex",
-                "id": "200",
-                "namespace": "rating-key",
-                "raw": {"summary": "George saves a whale.", "rating": "8.9"},
-            }
+            ProviderRef(
+                provider="plex",
+                id="200",
+                namespace="rating-key",
+                raw={"summary": "George saves a whale.", "rating": "8.9"},
+            )
         ],
     )
 
@@ -221,5 +236,8 @@ def test_plex_items_upsert_media_metadata_and_metadata_documents(tmp_path: Path)
     ).fetchone()
     assert document is not None
     assert document["source_path"] == "plex://metadata/200"
-    assert json.loads(document["provider_ids_json"]) == {"source_provider": "plex", "plex_rating_key": "200"}
+    assert json.loads(document["provider_ids_json"]) == {
+        "source_provider": "plex",
+        "plex_rating_key": "200",
+    }
     assert "Overview: George saves a whale." in document["text"]

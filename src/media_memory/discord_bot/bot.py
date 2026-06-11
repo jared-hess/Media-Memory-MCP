@@ -231,7 +231,9 @@ def format_search_response(payload: dict[str, Any], *, max_results: int = 3) -> 
     for result in results[:max_results]:
         if not isinstance(result, dict):
             continue
-        title = _string(result.get("title")) or _string(result.get("media_title")) or "Unknown title"
+        title = (
+            _string(result.get("title")) or _string(result.get("media_title")) or "Unknown title"
+        )
         show = _string(result.get("show_title")) or _string(result.get("show"))
         label = f"{show} - {title}" if show and show not in title else title
         evidence = _first_evidence(result)

@@ -199,10 +199,19 @@ class SearchResult(DomainModel):
     def __init__(self, *args: Any, **data: Any) -> None:
         """Accept the legacy positional constructor shape plus keyword use."""
 
-        legacy_fields = ("media_path", "title", "combined_score", "lexical_score", "vector_score", "evidences")
+        legacy_fields = (
+            "media_path",
+            "title",
+            "combined_score",
+            "lexical_score",
+            "vector_score",
+            "evidences",
+        )
         if args:
             if len(args) > len(legacy_fields):
-                raise TypeError(f"SearchResult expected at most {len(legacy_fields)} positional arguments")
+                raise TypeError(
+                    f"SearchResult expected at most {len(legacy_fields)} positional arguments"
+                )
             for field_name, value in zip(legacy_fields, args, strict=False):
                 if field_name in data:
                     raise TypeError(f"SearchResult got multiple values for argument '{field_name}'")

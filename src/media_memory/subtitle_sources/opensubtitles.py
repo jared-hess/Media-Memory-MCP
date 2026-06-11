@@ -22,12 +22,15 @@ class OpenSubtitlesClient(Protocol):
 
     def authenticate(self, *, api_key: str, username: str, password: str) -> str:
         """Return an authenticated bearer token."""
+        ...
 
     def search(self, *, token: str, params: Mapping[str, object]) -> list[Mapping[str, Any]]:
         """Return raw subtitle search results."""
+        ...
 
     def download(self, *, token: str, file_id: str) -> bytes:
         """Return subtitle bytes for an OpenSubtitles file identifier."""
+        ...
 
 
 @dataclass(frozen=True)
@@ -46,7 +49,9 @@ class OpenSubtitlesFetchMetadata:
 class OpenSubtitlesHTTPClient:
     """Small stdlib OpenSubtitles API client used only when explicitly configured."""
 
-    def __init__(self, *, base_url: str = DEFAULT_API_BASE_URL, timeout_seconds: float = 20.0) -> None:
+    def __init__(
+        self, *, base_url: str = DEFAULT_API_BASE_URL, timeout_seconds: float = 20.0
+    ) -> None:
         self.base_url = base_url.rstrip("/")
         self.timeout_seconds = timeout_seconds
 
@@ -65,7 +70,9 @@ class OpenSubtitlesHTTPClient:
         return token
 
     def search(self, *, token: str, params: Mapping[str, object]) -> list[Mapping[str, Any]]:
-        query = parse.urlencode({key: value for key, value in params.items() if value not in (None, "", [])})
+        query = parse.urlencode(
+            {key: value for key, value in params.items() if value not in (None, "", [])}
+        )
         response = self._request_json("GET", f"/subtitles?{query}", token=token)
         data = response.get("data", [])
         if not isinstance(data, list):
@@ -73,7 +80,9 @@ class OpenSubtitlesHTTPClient:
         return [item for item in data if isinstance(item, Mapping)]
 
     def download(self, *, token: str, file_id: str) -> bytes:
-        response = self._request_json("POST", "/download", token=token, body=json.dumps({"file_id": file_id}).encode("utf-8"))
+        response = self._request_json(
+            "POST", "/download", token=token, body=json.dumps({"file_id": file_id}).encode("utf-8")
+        )
         link = response.get("link")
         if not isinstance(link, str) or not link:
             raise ProviderError("OpenSubtitles download response did not include a link.")
@@ -150,11 +159,17 @@ class OpenSubtitlesSource:
         params = self._search_params(item)
         raw_candidates = self.client.search(token=token, params=params)
         candidates = [self._candidate_from_result(item, result) for result in raw_candidates]
-        confident = [candidate for candidate in candidates if (candidate.score or 0.0) >= self.min_match_confidence]
+        confident = [
+            candidate
+            for candidate in candidates
+            if (candidate.score or 0.0) >= self.min_match_confidence
+        ]
         confident.sort(key=lambda candidate: candidate.score or 0.0, reverse=True)
         return confident
 
-    def fetch(self, candidate: Path | SubtitleCandidate | ProviderCandidate, *, force: bool = False) -> Path:
+    def fetch(
+        self, candidate: Path | SubtitleCandidate | ProviderCandidate, *, force: bool = False
+    ) -> Path:
         if isinstance(candidate, Path):
             return candidate
         if isinstance(candidate, SubtitleCandidate) and candidate.provider != PROVIDER_NAME:
@@ -177,7 +192,9 @@ class OpenSubtitlesSource:
         if not self.enabled:
             raise ProviderError("OpenSubtitles fetch requested while provider is disabled.")
         if confidence < self.min_match_confidence:
-            raise ProviderError("OpenSubtitles candidate confidence is below the configured threshold.")
+            raise ProviderError(
+                "OpenSubtitles candidate confidence is below the configured threshold."
+            )
         self._ensure_budget_available()
         token = self._authenticate()
         content = self.client.download(token=token, file_id=file_id)
@@ -193,7 +210,9 @@ class OpenSubtitlesSource:
             path=str(cache_path),
             external_id=external_id,
         )
-        metadata_path.write_text(json.dumps(asdict(metadata), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        metadata_path.write_text(
+            json.dumps(asdict(metadata), indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
         self._record_download()
         return cache_path
 
@@ -210,10 +229,22 @@ class OpenSubtitlesSource:
     def _authenticate(self) -> str:
         if self._token is not None:
             return self._token
-        missing = [name for name, value in {"api_key": self.api_key, "username": self.username, "password": self.password}.items() if not value]
+        missing = [
+            name
+            for name, value in {
+                "api_key": self.api_key,
+                "username": self.username,
+                "password": self.password,
+            }.items()
+            if not value
+        ]
         if missing:
-            raise ProviderError(f"OpenSubtitles is enabled but missing credentials: {', '.join(missing)}.")
-        self._token = self.client.authenticate(api_key=self.api_key or "", username=self.username or "", password=self.password or "")
+            raise ProviderError(
+                f"OpenSubtitles is enabled but missing credentials: {', '.join(missing)}."
+            )
+        self._token = self.client.authenticate(
+            api_key=self.api_key or "", username=self.username or "", password=self.password or ""
+        )
         return self._token
 
     def _search_params(self, item: MediaItem) -> dict[str, object]:
@@ -235,18 +266,32 @@ class OpenSubtitlesSource:
             params["year"] = item.year
         return {key: value for key, value in params.items() if value is not None}
 
-    def _candidate_from_result(self, item: MediaItem, result: Mapping[str, Any]) -> SubtitleCandidate:
-        attributes = result.get("attributes") if isinstance(result.get("attributes"), Mapping) else result
+    def _candidate_from_result(
+        self, item: MediaItem, result: Mapping[str, Any]
+    ) -> SubtitleCandidate:
+        attributes = (
+            result.get("attributes") if isinstance(result.get("attributes"), Mapping) else result
+        )
         attributes = attributes if isinstance(attributes, Mapping) else {}
         files = attributes.get("files")
-        file_id = _first_file_id(files) or _optional_string(attributes.get("file_id")) or _optional_string(result.get("file_id"))
-        external_id = _optional_string(result.get("id")) or _optional_string(attributes.get("id")) or file_id
+        file_id = (
+            _first_file_id(files)
+            or _optional_string(attributes.get("file_id"))
+            or _optional_string(result.get("file_id"))
+        )
+        external_id = (
+            _optional_string(result.get("id")) or _optional_string(attributes.get("id")) or file_id
+        )
         if file_id is None or external_id is None:
             confidence = 0.0
         else:
             confidence = _confidence_for(item, result, attributes, self.languages)
-        language = _optional_string(attributes.get("language")) or _optional_string(attributes.get("language_code"))
-        license_status = _optional_string(attributes.get("license")) or _optional_string(attributes.get("license_status"))
+        language = _optional_string(attributes.get("language")) or _optional_string(
+            attributes.get("language_code")
+        )
+        license_status = _optional_string(attributes.get("license")) or _optional_string(
+            attributes.get("license_status")
+        )
         cache_path = self._cache_path(external_id, language) if external_id is not None else None
         raw = {
             PROVIDER_NAME: {
@@ -259,7 +304,15 @@ class OpenSubtitlesSource:
                 "raw": dict(result),
             }
         }
-        refs = [ProviderRef(provider=PROVIDER_NAME, id=external_id, confidence=confidence, raw=dict(result))] if external_id else []
+        refs = (
+            [
+                ProviderRef(
+                    provider=PROVIDER_NAME, id=external_id, confidence=confidence, raw=dict(result)
+                )
+            ]
+            if external_id
+            else []
+        )
         return SubtitleCandidate(
             path=cache_path if cache_path and cache_path.exists() else None,
             uri=f"opensubtitles://{external_id}" if external_id else None,
@@ -280,7 +333,10 @@ class OpenSubtitlesSource:
         budget_path = self._budget_path()
         budget_path.parent.mkdir(parents=True, exist_ok=True)
         usage = self._budget_usage() + 1
-        budget_path.write_text(json.dumps({"date": date.today().isoformat(), "downloads": usage}) + "\n", encoding="utf-8")
+        budget_path.write_text(
+            json.dumps({"date": date.today().isoformat(), "downloads": usage}) + "\n",
+            encoding="utf-8",
+        )
 
     def _budget_usage(self) -> int:
         budget_path = self._budget_path()
@@ -296,7 +352,9 @@ class OpenSubtitlesSource:
         return int(downloads) if isinstance(downloads, int) else 0
 
     def _cache_path(self, external_id: str, language: str | None) -> Path:
-        cache_key = hashlib.sha256(f"{external_id}:{language or 'unknown'}".encode("utf-8")).hexdigest()[:24]
+        cache_key = hashlib.sha256(
+            f"{external_id}:{language or 'unknown'}".encode("utf-8")
+        ).hexdigest()[:24]
         return self.cache_dir / f"{cache_key}.srt"
 
     def _metadata_path(self, cache_path: Path) -> Path:
@@ -358,7 +416,9 @@ def _confidence_for(
     if isinstance(explicit, int | float):
         return max(0.0, min(float(explicit), 1.0))
     confidence = 0.45
-    result_imdb = _optional_string(attributes.get("imdb_id")) or _optional_string(result.get("imdb_id"))
+    result_imdb = _optional_string(attributes.get("imdb_id")) or _optional_string(
+        result.get("imdb_id")
+    )
     item_imdb = _imdb_id_for(item)
     if item_imdb and result_imdb and item_imdb.removeprefix("tt") == result_imdb.removeprefix("tt"):
         confidence += 0.35
@@ -367,19 +427,35 @@ def _confidence_for(
     if item.year and _int_value(attributes.get("year")) == item.year:
         confidence += 0.1
     if item.kind == "episode":
-        if _int_value(attributes.get("season_number") or attributes.get("season")) in {item.season, item.season_number}:
+        if _int_value(attributes.get("season_number") or attributes.get("season")) in {
+            item.season,
+            item.season_number,
+        }:
             confidence += 0.05
-        if _int_value(attributes.get("episode_number") or attributes.get("episode")) in {item.episode, item.episode_number}:
+        if _int_value(attributes.get("episode_number") or attributes.get("episode")) in {
+            item.episode,
+            item.episode_number,
+        }:
             confidence += 0.05
-    language = _optional_string(attributes.get("language")) or _optional_string(attributes.get("language_code"))
+    language = _optional_string(attributes.get("language")) or _optional_string(
+        attributes.get("language_code")
+    )
     if language in preferred_languages:
         confidence += 0.1
     return max(0.0, min(confidence, 1.0))
 
 
 def _titles_match(item: MediaItem, attributes: Mapping[str, Any]) -> bool:
-    title = _optional_string(attributes.get("feature_details", {}).get("title")) if isinstance(attributes.get("feature_details"), Mapping) else None
-    title = title or _optional_string(attributes.get("title")) or _optional_string(attributes.get("movie_name"))
+    title = (
+        _optional_string(attributes.get("feature_details", {}).get("title"))
+        if isinstance(attributes.get("feature_details"), Mapping)
+        else None
+    )
+    title = (
+        title
+        or _optional_string(attributes.get("title"))
+        or _optional_string(attributes.get("movie_name"))
+    )
     expected_titles = {item.title.casefold()}
     if item.show_title:
         expected_titles.add(item.show_title.casefold())

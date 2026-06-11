@@ -8,7 +8,7 @@ from urllib import parse, request
 from xml.etree import ElementTree
 
 from media_memory.core.models import MediaItem
-from media_memory.media_sources.base import MediaRef, ProviderError
+from media_memory.media_sources.base import ProviderError
 
 
 class PlexClient(Protocol):
@@ -16,6 +16,7 @@ class PlexClient(Protocol):
 
     def get(self, path: str) -> bytes:
         """Return raw Plex XML for an API path."""
+        ...
 
 
 class UrllibPlexClient:
@@ -60,10 +61,10 @@ class PlexMediaSource:
         self.libraries = list(libraries or [])
         self._client = client
 
-    def scan(self) -> list[MediaItem | MediaRef]:
+    def scan(self) -> list[MediaItem]:
         if not self.enabled:
             return []
-        items: list[MediaItem | MediaRef] = []
+        items: list[MediaItem] = []
         for library in self.list_libraries():
             if not self._library_selected(library):
                 continue
@@ -87,7 +88,9 @@ class PlexMediaSource:
         if not self.enabled:
             return []
         root = self._xml(f"/library/sections/{parse.quote(library_key)}/all")
-        return [item for video in root.iter("Video") if (item := _item_from_video(video)) is not None]
+        return [
+            item for video in root.iter("Video") if (item := _item_from_video(video)) is not None
+        ]
 
     def _library_selected(self, library: PlexLibrary) -> bool:
         if not self.libraries:
@@ -126,7 +129,9 @@ def _item_from_video(video: ElementTree.Element) -> MediaItem | None:
     provider_ids = {"plex_rating_key": rating_key} if rating_key else {}
     provider_refs = []
     if rating_key:
-        provider_refs.append({"provider": "plex", "id": rating_key, "namespace": "rating-key", "raw": raw})
+        provider_refs.append(
+            {"provider": "plex", "id": rating_key, "namespace": "rating-key", "raw": raw}
+        )
 
     return MediaItem(
         title=title,

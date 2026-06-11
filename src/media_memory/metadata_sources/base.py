@@ -11,6 +11,7 @@ class MetadataSource(Protocol):
 
     def enrich(self, _item: MediaItem, /) -> MediaItem:
         """Return an enriched copy of a media item."""
+        ...
 
 
 class DisabledMetadataSource:
@@ -24,4 +25,6 @@ class DisabledMetadataSource:
     def enrich(self, item: MediaItem) -> MediaItem:
         if not self.enabled:
             return item
-        raise ProviderError(f"{self.provider_name} metadata source is configured but not implemented yet.")
+        raise ProviderError(
+            f"{self.provider_name} metadata source is configured but not implemented yet."
+        )

@@ -59,7 +59,9 @@ class FilenameMetadataSource:
                             text=text,
                             source_path=str(path),
                             source_kind="metadata" if suffix.startswith("metadata") else "summary",
-                            provider="plex-placeholder" if suffix.startswith("plex-overview") else self.provider_name,
+                            provider="plex-placeholder"
+                            if suffix.startswith("plex-overview")
+                            else self.provider_name,
                         )
                     )
             elif suffix in self.json_suffixes:
@@ -72,9 +74,17 @@ class FilenameMetadataSource:
         payload = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(payload, dict):
             return None
-        text = str(payload.get("summary") or payload.get("overview") or payload.get("plot") or payload.get("text") or "").strip()
+        text = str(
+            payload.get("summary")
+            or payload.get("overview")
+            or payload.get("plot")
+            or payload.get("text")
+            or ""
+        ).strip()
         if not text:
             return None
         provider = str(payload.get("provider") or "manual")
         source_kind = str(payload.get("source_type") or payload.get("source_kind") or "metadata")
-        return MetadataDocument(text=text, source_path=str(path), source_kind=source_kind, provider=provider)
+        return MetadataDocument(
+            text=text, source_path=str(path), source_kind=source_kind, provider=provider
+        )

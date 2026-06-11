@@ -14,8 +14,12 @@ class ResultRankingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             db = MediaMemoryDB(Path(tmp) / "test.db")
             db.init_schema()
-            exact_media_id = db.upsert_media_item(path="/media/exact.mkv", title="Exact", kind="movie")
-            fuzzy_media_id = db.upsert_media_item(path="/media/fuzzy.mkv", title="Fuzzy", kind="movie")
+            exact_media_id = db.upsert_media_item(
+                path="/media/exact.mkv", title="Exact", kind="movie"
+            )
+            fuzzy_media_id = db.upsert_media_item(
+                path="/media/fuzzy.mkv", title="Fuzzy", kind="movie"
+            )
             db.insert_chunk(
                 exact_media_id,
                 SubtitleChunk(
@@ -43,7 +47,9 @@ class ResultRankingTests(unittest.TestCase):
 
             results = SearchService(db).search_media("may the force be with you", limit=2)
 
-            self.assertEqual(["/media/exact.mkv", "/media/fuzzy.mkv"], [result.media_path for result in results])
+            self.assertEqual(
+                ["/media/exact.mkv", "/media/fuzzy.mkv"], [result.media_path for result in results]
+            )
             self.assertTrue(any("exact phrase" in reason for reason in results[0].why))
             db.close()
 
@@ -51,8 +57,12 @@ class ResultRankingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             db = MediaMemoryDB(Path(tmp) / "test.db")
             db.init_schema()
-            summary_media_id = db.upsert_media_item(path="/media/summary.mkv", title="Summary Episode", kind="episode")
-            subtitle_media_id = db.upsert_media_item(path="/media/subtitle.mkv", title="Subtitle Episode", kind="episode")
+            summary_media_id = db.upsert_media_item(
+                path="/media/summary.mkv", title="Summary Episode", kind="episode"
+            )
+            subtitle_media_id = db.upsert_media_item(
+                path="/media/subtitle.mkv", title="Subtitle Episode", kind="episode"
+            )
             db.insert_chunk(
                 summary_media_id,
                 SubtitleChunk(
@@ -88,8 +98,12 @@ class ResultRankingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             db = MediaMemoryDB(Path(tmp) / "test.db")
             db.init_schema()
-            subtitle_media_id = db.upsert_media_item(path="/media/dialogue.mkv", title="Dialogue", kind="movie")
-            summary_media_id = db.upsert_media_item(path="/media/timestamped-summary.mkv", title="Summary", kind="movie")
+            subtitle_media_id = db.upsert_media_item(
+                path="/media/dialogue.mkv", title="Dialogue", kind="movie"
+            )
+            summary_media_id = db.upsert_media_item(
+                path="/media/timestamped-summary.mkv", title="Summary", kind="movie"
+            )
             db.insert_chunk(
                 summary_media_id,
                 SubtitleChunk(
@@ -117,7 +131,9 @@ class ResultRankingTests(unittest.TestCase):
 
             results = SearchService(db).search_dialogue("open the pod bay doors", limit=2)
 
-            self.assertEqual("/media/dialogue.mkv", results[0]["media"]["path"])
+            media = results[0]["media"]
+            assert isinstance(media, dict)
+            self.assertEqual("/media/dialogue.mkv", media["path"])
             self.assertIn("subtitle source", str(results[0]["why"]))
             self.assertIn("timestamp metadata", str(results[0]["why"]))
             db.close()
@@ -148,7 +164,9 @@ class ResultRankingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             db = MediaMemoryDB(Path(tmp) / "test.db")
             db.init_schema()
-            media_id = db.upsert_media_item(path="/media/provider.mkv", title="Provider", kind="movie")
+            media_id = db.upsert_media_item(
+                path="/media/provider.mkv", title="Provider", kind="movie"
+            )
             db.conn.execute(
                 "UPDATE media_items SET provider_ids_json = ? WHERE legacy_id = ?",
                 ('{"imdb": "tt123"}', media_id),

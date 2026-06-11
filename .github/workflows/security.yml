@@ -1,0 +1,42 @@
+name: Security
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - chore/repo-logistics-ci
+
+permissions:
+  contents: read
+
+jobs:
+  trivy:
+    name: Trivy security scans
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Scan filesystem and configuration
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: table
+          exit-code: '1'
+
+      - name: Build local image for scan
+        run: docker build --pull -t media-memory-mcp:trivy .
+
+      - name: Scan local image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: media-memory-mcp:trivy
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: table
+          exit-code: '1'

@@ -25,3 +25,4 @@ class MediaSource(Protocol):
 
     def scan(self) -> Iterable[MediaItem | MediaRef]:
         """Return media items or media references discovered by the source."""
+        ...

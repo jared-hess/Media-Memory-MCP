@@ -75,7 +75,9 @@ class SubtitleChunkTests(unittest.TestCase):
             legacy_chunk_subtitles(chunks, join_within_ms=-1)
 
     def _chunk(self, text: str, start_ms: int, end_ms: int) -> SubtitleChunk:
-        return SubtitleChunk(media_path="m", subtitle_path="s", text=text, start_ms=start_ms, end_ms=end_ms)
+        return SubtitleChunk(
+            media_path="m", subtitle_path="s", text=text, start_ms=start_ms, end_ms=end_ms
+        )
 
 
 if __name__ == "__main__":

@@ -63,7 +63,13 @@ class ResultShapeTests(unittest.TestCase):
         self.assertEqual("hello", result.evidences[0].text)
 
     def test_legacy_constructors_and_path_behavior_still_work(self) -> None:
-        item = MediaItem(title="Show S01E01", path=Path("/media/Show.S01E01.mkv"), kind="episode", season=1, episode=1)
+        item = MediaItem(
+            title="Show S01E01",
+            path=Path("/media/Show.S01E01.mkv"),
+            kind="episode",
+            season=1,
+            episode=1,
+        )
         chunk = SubtitleChunk(
             media_path=str(item.path),
             subtitle_path="/media/Show.S01E01.srt",

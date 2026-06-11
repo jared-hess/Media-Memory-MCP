@@ -55,7 +55,9 @@ def identify_media_path(path: str | Path, *, corpus_id: str = "local") -> MediaI
         )
 
     movie_title, year = _identify_movie(stem)
-    return MediaItem(title=movie_title, path=media_path, kind="movie", year=year, corpus_id=corpus_id)
+    return MediaItem(
+        title=movie_title, path=media_path, kind="movie", year=year, corpus_id=corpus_id
+    )
 
 
 def identify_filename(path: str | Path, *, corpus_id: str = "local") -> MediaItem:

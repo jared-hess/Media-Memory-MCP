@@ -62,12 +62,37 @@ For compose, create local host directories and place a safe config at `./config/
 
 ```bash
 mkdir -p config data media bazarr
+chown -R 10001:10001 data
 cp config.example.yaml config/config.yaml
 docker compose config
 docker compose up media-memory
 ```
 
-`docker-compose.yml` runs `media-memory mcp --config /config/config.yaml` over stdio by default. It mounts `/config` read-only, `/media` read-only, optional `/bazarr` read-only, and `/data` read-write for SQLite, vectors, caches, and derived subtitle files. Override `MEDIA_LIBRARY_PATH` or `BAZARR_SUBTITLE_PATH` to point at existing host directories; do not mount media read-write.
+`docker-compose.yml` runs `media-memory mcp --config /config/config.yaml` over stdio by default as UID/GID `10001:10001` through `user: "${PUID:-10001}:${PGID:-10001}"`. It mounts `/config` read-only, `/media` read-only, optional `/bazarr` read-only, and `/data` read-write for SQLite, vectors, caches, and derived subtitle files. Override `MEDIA_LIBRARY_PATH` or `BAZARR_SUBTITLE_PATH` to point at existing host directories; do not mount media read-write.
+
+### Runtime identity and volume write contract
+
+The hardened image runs by default as the non-root `media-memory` user with UID/GID `10001:10001`. Host mounts must allow `/data` writes by `10001:10001` so SQLite, vector data, and derived subtitle artifacts can be created; for the default local compose layout, run `chown -R 10001:10001 data` after creating the directories.
+
+`/config`, `/media`, and `/bazarr` are intentionally designed as read-only mounts. The container should not need to write to those paths, and only `/data` is treated as the writable application path.
+
+Compose includes `user: "${PUID:-10001}:${PGID:-10001}"` so operators can align container writes with host ownership by exporting `PUID` and `PGID` when a different writable `/data` owner is required.
+
+### Container E2E test
+
+Run the container-level end-to-end check with:
+
+```bash
+bash scripts/e2e-container.sh
+```
+
+The command runs a default E2E path that builds the image, creates temporary `/config`, `/media`, and `/data` mounts, and copies synthetic fixtures from `tests/fixtures/media`, so no user media is required. It validates both CLI search and MCP `search_dialogue` against the container-mounted config and data, and it verifies a real database file at `/data/media-memory.sqlite` is created in the container.
+
+Optional environment overrides:
+
+- `IMAGE_TAG`: custom image tag used for build and test runs.
+- `SKIP_BUILD=1`: reuse an existing image without rebuilding.
+- `KEEP_E2E_TMP=1`: keep temporary E2E directories for inspection.
 
 Operational status is available from the CLI and is safe to emit as JSON because it reports provider enablement flags and model/provider names, not tokens or service URLs:
 

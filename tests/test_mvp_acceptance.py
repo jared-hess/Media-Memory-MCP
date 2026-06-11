@@ -103,7 +103,9 @@ def test_golden_query_results_include_evidence_and_subtitle_timestamps(tmp_path:
         assert results, golden["query"]
         matching_results = [result for result in results if _matches_expected_media(result, golden)]
         assert matching_results, golden["query"]
-        _assert_result_has_evidence(matching_results[0], expected_source_kind=str(golden["source_kind"]))
+        _assert_result_has_evidence(
+            matching_results[0], expected_source_kind=str(golden["source_kind"])
+        )
 
 
 def test_fixture_ingest_rerun_creates_no_duplicate_chunks(tmp_path: Path) -> None:
@@ -129,8 +131,10 @@ def test_fixture_ingest_rerun_creates_no_duplicate_chunks(tmp_path: Path) -> Non
     finally:
         db.close()
 
-    assert second["stats"]["failed_jobs"] == 0
-    assert second["stats"]["new_chunks"] == 0
+    second_stats = second["stats"]
+    assert isinstance(second_stats, dict)
+    assert second_stats["failed_jobs"] == 0
+    assert second_stats["new_chunks"] == 0
     assert second_counts == first_counts
 
 
@@ -154,9 +158,13 @@ def test_fixture_query_median_latency_under_500_ms_after_indexing(tmp_path: Path
 def _index_fixture(tmp_path: Path) -> IndexedFixture:
     config_path = _write_temp_config(tmp_path)
     payload = _run_cli(["ingest", str(FIXTURE_MEDIA_ROOT), "--config", str(config_path), "--json"])
-    assert payload["scanned"] >= len(GOLDEN_QUERIES)
-    assert payload["stats"]["failed_jobs"] == 0
-    assert payload["stats"]["new_chunks"] > 0
+    stats = payload["stats"]
+    scanned = payload["scanned"]
+    assert isinstance(stats, dict)
+    assert isinstance(scanned, int)
+    assert scanned >= len(GOLDEN_QUERIES)
+    assert stats["failed_jobs"] == 0
+    assert stats["new_chunks"] > 0
     return IndexedFixture(
         config_path=config_path,
         db_path=tmp_path / "media-memory.sqlite",
@@ -239,6 +247,11 @@ def _assert_result_has_evidence(result: SearchResult, *, expected_source_kind: s
     assert result.evidences
     assert any(evidence.text.strip() for evidence in result.evidences)
     if expected_source_kind == "subtitle":
-        assert any(evidence.start_ms is not None and evidence.end_ms is not None for evidence in result.evidences)
+        assert any(
+            evidence.start_ms is not None and evidence.end_ms is not None
+            for evidence in result.evidences
+        )
     else:
-        assert any(evidence.start_ms is None and evidence.end_ms is None for evidence in result.evidences)
+        assert any(
+            evidence.start_ms is None and evidence.end_ms is None for evidence in result.evidences
+        )

@@ -1,0 +1,54 @@
+name: Python CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - chore/repo-logistics-ci
+
+permissions:
+  contents: read
+
+jobs:
+  validation:
+    name: Python validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync --locked --group dev
+
+      - name: Check formatting
+        run: uv run ruff format --check .
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Type check
+        run: uv run basedpyright
+
+      - name: Test
+        run: uv run pytest
+
+  container-e2e:
+    name: Container E2E
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run containerized E2E
+        run: bash scripts/e2e-container.sh

@@ -14,7 +14,9 @@ class IngestService:
         self.embeddings = embeddings
         self.vectors = vectors
         self.subtitle_source = LocalSidecarSubtitleSource()
-        self.pipeline = IngestPipeline(db, embeddings, vectors, subtitle_source=self.subtitle_source)
+        self.pipeline = IngestPipeline(
+            db, embeddings, vectors, subtitle_source=self.subtitle_source
+        )
 
     def ingest_media_items(self, items: list[MediaItem]) -> dict[str, int]:
         return self.pipeline.ingest_media_items(items)

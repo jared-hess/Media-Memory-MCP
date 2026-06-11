@@ -92,7 +92,9 @@ def rest_media_payload(services: McpServices, media_id: str) -> dict[str, object
     return get_media_payload(services, media_id=media_id)
 
 
-def rest_scene_payload(services: McpServices, media_id: str, start: str | None) -> dict[str, object]:
+def rest_scene_payload(
+    services: McpServices, media_id: str, start: str | None
+) -> dict[str, object]:
     """Return scene context for the chunk nearest a media timestamp in seconds."""
 
     if start is None:
@@ -144,6 +146,8 @@ def _optional_string(value: object, name: str) -> str | None:
 def _optional_int(value: object, name: str) -> int | None:
     if value is None:
         return None
+    if not isinstance(value, (str, int)):
+        raise ValueError(f"Field must be an integer: {name}")
     try:
         return int(value)
     except (TypeError, ValueError) as exc:
@@ -153,6 +157,8 @@ def _optional_int(value: object, name: str) -> int | None:
 def _optional_float(value: object, name: str) -> float | None:
     if value is None:
         return None
+    if not isinstance(value, (str, int, float)):
+        raise ValueError(f"Field must be a number: {name}")
     try:
         return float(value)
     except (TypeError, ValueError) as exc:

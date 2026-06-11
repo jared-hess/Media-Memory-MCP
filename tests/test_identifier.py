@@ -94,12 +94,19 @@ class IdentifierTests(unittest.TestCase):
         media = media_id(path="/media/movie.mkv")
         document = document_id(media_id=media, source_path="/media/movie.en.srt")
         chunk = chunk_id(document_id=document, text="hello there", start_ms=1000, end_ms=2000)
-        ingest = ingest_job_id(media_id=media, document_id=document, source_path="/media/movie.en.srt")
+        ingest = ingest_job_id(
+            media_id=media, document_id=document, source_path="/media/movie.en.srt"
+        )
         embedding = embedding_id(chunk_id=chunk, provider="mock", model="mock")
 
         self.assertEqual(document, document_id(media_id=media, source_path="/media/movie.en.srt"))
-        self.assertEqual(chunk, chunk_id(document_id=document, text="hello there", start_ms=1000, end_ms=2000))
-        self.assertEqual(ingest, ingest_job_id(media_id=media, document_id=document, source_path="/media/movie.en.srt"))
+        self.assertEqual(
+            chunk, chunk_id(document_id=document, text="hello there", start_ms=1000, end_ms=2000)
+        )
+        self.assertEqual(
+            ingest,
+            ingest_job_id(media_id=media, document_id=document, source_path="/media/movie.en.srt"),
+        )
         self.assertEqual(embedding, embedding_id(chunk_id=chunk, provider="mock", model="mock"))
         self.assertTrue(document.startswith("v1:doc:local:"))
         self.assertTrue(chunk.startswith("v1:chunk:local:"))

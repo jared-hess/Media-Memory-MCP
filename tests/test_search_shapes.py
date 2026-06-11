@@ -16,7 +16,9 @@ class SearchShapeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             db = MediaMemoryDB(Path(tmp) / "test.db")
             db.init_schema()
-            media_id = db.upsert_media_item(path="/media/Show.S01E01.mkv", title="Show S01E01", kind="episode")
+            media_id = db.upsert_media_item(
+                path="/media/Show.S01E01.mkv", title="Show S01E01", kind="episode"
+            )
             chunk = SubtitleChunk(
                 media_path="/media/Show.S01E01.mkv",
                 subtitle_path="/media/Show.S01E01.srt",
@@ -26,6 +28,7 @@ class SearchShapeTests(unittest.TestCase):
             )
             chunk_id = db.insert_chunk(media_id, chunk, text_hash="hash-1")
             self.assertIsNotNone(chunk_id)
+            assert chunk_id is not None
 
             embeddings = MockEmbeddingProvider()
             vectors = LanceDBVectorStore()
@@ -37,9 +40,11 @@ class SearchShapeTests(unittest.TestCase):
             payload = results[0].to_dict()
             self.assertIn("media_path", payload)
             self.assertIn("evidences", payload)
-            self.assertIsInstance(payload["evidences"], list)
-            self.assertIn("start_ms", payload["evidences"][0])
-            self.assertIn("end_ms", payload["evidences"][0])
+            evidences = payload["evidences"]
+            self.assertIsInstance(evidences, list)
+            assert isinstance(evidences, list)
+            self.assertIn("start_ms", evidences[0])
+            self.assertIn("end_ms", evidences[0])
             db.close()
 
 

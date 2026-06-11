@@ -24,7 +24,9 @@ def create_server(config_path: Path | str | None = None) -> FastMCP:
     return app
 
 
-def run_server(config_path: Path | str | None = None, *, config: MediaMemoryConfig | None = None) -> None:
+def run_server(
+    config_path: Path | str | None = None, *, config: MediaMemoryConfig | None = None
+) -> None:
     """Run the MCP server over the configured safe transport."""
 
     services = create_services(config_path, config=config)
