@@ -33,7 +33,13 @@ RUN apt-get update \
 COPY --from=builder /opt/venv /opt/venv
 
 RUN find /usr/local/lib/python3.11/site-packages -maxdepth 1 \
-    \(-type d -name "jaraco*" -o -type d -name "wheel*" -o -type d -name "setuptools*" -o -type d -name "pip*"\) -exec rm -rf {} + 2>/dev/null || true
+    \( -type d -name "jaraco*" -o -type d -name "wheel*" -o -type d -name "setuptools*" -o -type d -name "pip*" \) \
+    -exec rm -rf {} + 2>/dev/null || true \
+    && find /opt/venv/lib/python3.11/site-packages -maxdepth 1 \
+    \( -type d -name "setuptools*" -o -type d -name "wheel*" -o -type d -name "pip*" \) \
+    -exec rm -rf {} + 2>/dev/null || true \
+    && find /opt/venv/lib/python3.11/site-packages/setuptools/_vendor -maxdepth 1 \
+    -type d \( -name "jaraco*" -o -name "jaraco_context*" \) -prune -exec rm -rf {} + 2>/dev/null || true
 RUN chown -R media-memory:media-memory /app /data /opt/venv
 
 WORKDIR /app
