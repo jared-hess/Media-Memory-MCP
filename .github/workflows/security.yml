@@ -30,7 +30,7 @@ jobs:
           exit-code: '1'
 
       - name: Build local image for scan
-        run: docker build -t media-memory-mcp:trivy .
+        run: docker build --pull -t media-memory-mcp:trivy .
 
       - name: Scan local image
         uses: aquasecurity/trivy-action@v0.36.0
