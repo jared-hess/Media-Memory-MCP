@@ -30,6 +30,24 @@ For containerized home-lab deployment, mount paths follow this model:
 - `/data`: read-write application data mount for SQLite, derived indexes, logs, and caches.
 - `/bazarr`: optional read-only subtitle export mount for future Bazarr integration work.
 
+## Container E2E test
+
+Run:
+
+```bash
+bash scripts/e2e-container.sh
+```
+
+This default harness uses the repository's synthetic fixtures from `tests/fixtures/media`, so no user media is required. It builds the image, prepares temporary mount points for `/config`, `/media`, and `/data`, and asserts against mounted data using CLI and MCP tool checks.
+
+The run validates container mount behavior, executes search flows, and checks that a real SQLite DB is created at `/data/media-memory.sqlite` inside the container. It also validates `media-memory mcp-call search_dialogue` with the mounted fixture data.
+
+Optional environment settings:
+
+- `IMAGE_TAG`: override the image tag used by the run.
+- `SKIP_BUILD=1`: skip image build and reuse an existing tag.
+- `KEEP_E2E_TMP=1`: keep temporary fixture directories after completion.
+
 The compose service runs `media-memory mcp --config /config/config.yaml` over stdio as `user: "${PUID:-10001}:${PGID:-10001}"`. It does not publish an HTTP MCP port, and media/config/Bazarr inputs stay read-only while `/data` remains writable.
 
 `/config`, `/media`, and `/bazarr` are read-only mounts by design. Operators may set `PUID`/`PGID` to align the compose service with an existing host `/data` owner; otherwise it uses UID/GID `10001:10001`.

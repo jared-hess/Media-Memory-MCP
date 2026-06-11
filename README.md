@@ -78,6 +78,22 @@ The hardened image runs by default as the non-root `media-memory` user with UID/
 
 Compose includes `user: "${PUID:-10001}:${PGID:-10001}"` so operators can align container writes with host ownership by exporting `PUID` and `PGID` when a different writable `/data` owner is required.
 
+### Container E2E test
+
+Run the container-level end-to-end check with:
+
+```bash
+bash scripts/e2e-container.sh
+```
+
+The command runs a default E2E path that builds the image, creates temporary `/config`, `/media`, and `/data` mounts, and copies synthetic fixtures from `tests/fixtures/media`, so no user media is required. It validates both CLI search and MCP `search_dialogue` against the container-mounted config and data, and it verifies a real database file at `/data/media-memory.sqlite` is created in the container.
+
+Optional environment overrides:
+
+- `IMAGE_TAG`: custom image tag used for build and test runs.
+- `SKIP_BUILD=1`: reuse an existing image without rebuilding.
+- `KEEP_E2E_TMP=1`: keep temporary E2E directories for inspection.
+
 Operational status is available from the CLI and is safe to emit as JSON because it reports provider enablement flags and model/provider names, not tokens or service URLs:
 
 ```bash
