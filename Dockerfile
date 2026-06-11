@@ -33,6 +33,7 @@ RUN apt-get update \
 
 COPY --from=builder /opt/venv /opt/venv
 
+RUN /usr/local/bin/pip install --no-cache-dir --upgrade pip setuptools "wheel>=0.46.2" "jaraco.context>=6.1.0"     && /usr/local/bin/pip cache purge
 RUN chown -R media-memory:media-memory /app /data /opt/venv
 
 WORKDIR /app
