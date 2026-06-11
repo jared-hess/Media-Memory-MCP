@@ -6,7 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:$PATH"
 
 RUN python -m venv /opt/venv \
-    && python -m pip install --no-cache-dir --upgrade pip setuptools wheel
+    && python -m pip install --no-cache-dir --upgrade pip setuptools "wheel>=0.46.2" "jaraco.context>=6.1.0"
 
 WORKDIR /app
 
