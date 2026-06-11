@@ -23,7 +23,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:$PATH"
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg \
+    && apt-get install -y --no-install-recommends ffmpeg libgnutls30 libssl3 \
     && apt-get clean \
     && groupadd --gid 10001 media-memory \
     && useradd --uid 10001 --gid media-memory --home-dir /app --no-create-home --shell /usr/sbin/nologin media-memory \
