@@ -274,7 +274,7 @@ assert_json "MCP ready and ingest tools disabled" "${MCP_JSON}" "payload.get('st
 log "Running MCP search_dialogue"
 docker_run media-memory mcp-call search_dialogue --config /config/config.yaml --params '{"query":"red pill","limit":5}' | tee "${MCP_SEARCH_JSON}"
 assert_file_contains "MCP search_dialogue returns The.Matrix.1999.mkv" "${MCP_SEARCH_JSON}" "The.Matrix.1999.mkv"
-assert_file_contains "MCP evidence includes search_dialogue command" <(printf '%s\n' "media-memory mcp-call search_dialogue") "search_dialogue"
+assert_json "MCP search_dialogue response shape" "${MCP_SEARCH_JSON}" "payload.get('query') == 'red pill' and isinstance(payload.get('results'), list) and len(payload.get('results')) > 0 and payload.get('results')[0].get('media', {}).get('path') == '/media/The.Matrix.1999.mkv' and payload.get('results')[0].get('query') == 'red pill'"
 
 log "Output files"
 echo "scan: ${SCAN_JSON}"
