@@ -6,7 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:$PATH"
 
 RUN python -m venv /opt/venv \
-    && python -m pip install --no-cache-dir --upgrade pip setuptools "wheel>=0.46.2" "jaraco.context>=6.1.0"
+    && python -m pip install --no-cache-dir --upgrade pip setuptools wheel
 
 WORKDIR /app
 
@@ -24,7 +24,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ffmpeg \
-    && apt-get upgrade -y \
     && apt-get clean \
     && groupadd --gid 10001 media-memory \
     && useradd --uid 10001 --gid media-memory --home-dir /app --no-create-home --shell /usr/sbin/nologin media-memory \
@@ -33,7 +32,8 @@ RUN apt-get update \
 
 COPY --from=builder /opt/venv /opt/venv
 
-RUN /usr/local/bin/pip install --no-cache-dir --upgrade pip setuptools "wheel>=0.46.2" "jaraco.context>=6.1.0"     && /usr/local/bin/pip cache purge
+RUN find /usr/local/lib/python3.11/site-packages -maxdepth 1 \
+    \(-type d -name "jaraco*" -o -type d -name "wheel*" -o -type d -name "setuptools*" -o -type d -name "pip*"\) -exec rm -rf {} + 2>/dev/null || true
 RUN chown -R media-memory:media-memory /app /data /opt/venv
 
 WORKDIR /app
