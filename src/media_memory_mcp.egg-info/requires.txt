@@ -1,0 +1,8 @@
+lancedb
+mcp
+openai
+pydantic
+pydantic-settings
+pysubs2
+PyYAML
+typer[all]<0.16,>=0.12

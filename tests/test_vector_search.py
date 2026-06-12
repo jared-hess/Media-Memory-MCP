@@ -97,19 +97,19 @@ def test_openai_provider_requires_key_only_when_configured() -> None:
 def test_openai_provider_uses_configured_model_and_dimensions(monkeypatch) -> None:
     observed_calls: list[dict[str, object]] = []
 
-    class FakeOpenAIClient:
-        def __init__(self, *args: object, **kwargs: object) -> None:
-            self.embeddings = _FakeOpenAIEmbeddings()
-
     class _FakeOpenAIEmbeddings:
-        def create(self, **kwargs: object) -> SimpleNamespace:
-            observed_calls.append(kwargs)
+        def create(self, _calls: list[dict[str, object]] = observed_calls, **kwargs: object) -> SimpleNamespace:
+            _calls.append(kwargs)
             return SimpleNamespace(
                 data=[
                     SimpleNamespace(embedding=[0.1, 0.2, 0.3]),
                     SimpleNamespace(embedding=[0.4, 0.5, 0.6]),
                 ]
             )
+
+    class FakeOpenAIClient:
+        def __init__(self, *args: object, _embeddings_cls: type = _FakeOpenAIEmbeddings, **kwargs: object) -> None:
+            self.embeddings = _embeddings_cls()
 
     fake_openai_module = ModuleType("openai")
     setattr(fake_openai_module, "OpenAI", FakeOpenAIClient)
