@@ -88,24 +88,27 @@ metadata:
     - filename
     - tmdb
     - tvmaze
-  fetch_external: false
+  fetch_external: false  # Must remain false; enabling true now fails fast at startup.
 
 embeddings:
   provider: mock
+  # Model is passed through to OpenAI when provider is set to openai.
   model: mock
   batch_size: 128
+  # Set OPENAI_API_KEY only when embeddings.provider is openai.
   api_key: ${OPENAI_API_KEY}
   dimensions: 16
 
 index:
   metadata_db: sqlite
   sqlite_path: /data/media-memory.sqlite
-  vector_db: lancedb
+  vector_db: lancedb  # Runtime validation now fails fast for unsupported values.
   vector_path: /data/vectors
 
 search:
   default_limit: 5
   max_limit: 50
+  # Only the default weights are currently supported. Non-default values fail startup.
   lexical_weight: 0.45
   vector_weight: 0.45
   metadata_boost_weight: 0.10

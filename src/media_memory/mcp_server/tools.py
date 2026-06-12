@@ -6,7 +6,7 @@ from typing import Any
 
 import typer
 
-from media_memory.config import MediaMemoryConfig, load_config
+from media_memory.config import MediaMemoryConfig, load_config, validate_supported_runtime_config
 from media_memory.core.db import MediaMemoryDB
 from media_memory.core.embeddings import (
     EmbeddingProvider,
@@ -115,6 +115,7 @@ def create_services(
     """Build MCP services from the same local config primitives as the CLI."""
 
     loaded_config = config or _load_config(config_path)
+    validate_supported_runtime_config(loaded_config)
     db = MediaMemoryDB(loaded_config.index.sqlite_path)
     db.init_schema()
     embeddings = _build_embeddings(loaded_config)
@@ -314,7 +315,9 @@ def _load_config(config_path: Path | str | None) -> MediaMemoryConfig:
         return load_config(path)
     if path != DEFAULT_CONFIG_PATH and path != DEFAULT_CONFIG_PATH.resolve():
         raise typer.BadParameter(f"Config file does not exist: {path}")
-    return MediaMemoryConfig()
+    loaded_config = MediaMemoryConfig()
+    validate_supported_runtime_config(loaded_config)
+    return loaded_config
 
 
 def _build_embeddings(config: MediaMemoryConfig) -> EmbeddingProvider:
@@ -322,7 +325,9 @@ def _build_embeddings(config: MediaMemoryConfig) -> EmbeddingProvider:
         return MockEmbeddingProvider(dims=config.embeddings.dimensions)
     try:
         return OpenAIEmbeddingProvider(
-            config.embeddings.api_key, dimensions=config.embeddings.dimensions
+            config.embeddings.api_key,
+            model=config.embeddings.model,
+            dimensions=config.embeddings.dimensions,
         )
     except EmbeddingProviderConfigError as exc:
         raise typer.BadParameter(str(exc)) from exc

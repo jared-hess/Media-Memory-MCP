@@ -8,7 +8,7 @@ from typing import Annotated, Generator
 
 import typer
 
-from media_memory.config import MediaMemoryConfig, load_config
+from media_memory.config import MediaMemoryConfig, load_config, validate_supported_runtime_config
 from media_memory.core.db import MediaMemoryDB, SCHEMA_VERSION
 from media_memory.core.embeddings import (
     EmbeddingProvider,
@@ -62,7 +62,9 @@ def _load_cli_config(config_path: Path) -> MediaMemoryConfig:
         return load_config(config_path)
     if config_path != DEFAULT_CONFIG_PATH.resolve() and config_path != DEFAULT_CONFIG_PATH:
         raise typer.BadParameter(f"Config file does not exist: {config_path}")
-    return MediaMemoryConfig()
+    config = MediaMemoryConfig()
+    validate_supported_runtime_config(config)
+    return config
 
 
 def _db_path(config: MediaMemoryConfig) -> Path:
@@ -74,7 +76,9 @@ def _build_embeddings(config: MediaMemoryConfig) -> EmbeddingProvider:
         return MockEmbeddingProvider(dims=config.embeddings.dimensions)
     try:
         return OpenAIEmbeddingProvider(
-            config.embeddings.api_key, dimensions=config.embeddings.dimensions
+            config.embeddings.api_key,
+            model=config.embeddings.model,
+            dimensions=config.embeddings.dimensions,
         )
     except EmbeddingProviderConfigError as exc:
         raise typer.BadParameter(str(exc)) from exc
