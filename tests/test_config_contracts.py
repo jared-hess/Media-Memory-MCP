@@ -7,14 +7,23 @@ from typing import Literal
 import pytest
 
 from media_memory import config as config_module
-from media_memory.config import EmbeddingsConfig, IndexConfig, MediaMemoryConfig, MetadataConfig, SearchConfig, load_config
+from media_memory.config import (
+    EmbeddingsConfig,
+    IndexConfig,
+    MediaMemoryConfig,
+    MetadataConfig,
+    SearchConfig,
+    load_config,
+)
 from media_memory.core.embeddings import MockEmbeddingProvider
 from media_memory.mcp_server import tools as mcp_tools
 
 cli_main = importlib.import_module("media_memory.cli.main")
 
 
-ProofType = Literal["constructor", "external-client call", "service behavior", "fail-fast", "reserved"]
+ProofType = Literal[
+    "constructor", "external-client call", "service behavior", "fail-fast", "reserved"
+]
 ContractStatus = Literal["implemented", "fail-fast", "reserved/documented", "drift-risk"]
 RuntimeBoundary = Literal[
     "pydantic config",
@@ -255,9 +264,7 @@ class _FakeOpenAIEmbeddingProvider:
         model: str,
         dimensions: int | None = None,
     ) -> None:
-        self.calls.append(
-            {"api_key": api_key, "model": model, "dimensions": dimensions}
-        )
+        self.calls.append({"api_key": api_key, "model": model, "dimensions": dimensions})
 
 
 def _sentinel_openai_config() -> MediaMemoryConfig:
@@ -309,9 +316,7 @@ def test_mcp_openai_embedding_factory_receives_configured_values(monkeypatch) ->
 
 
 def test_embedding_factories_preserve_mock_provider_dimensions() -> None:
-    config = MediaMemoryConfig(
-        embeddings=EmbeddingsConfig(provider="mock", dimensions=123)
-    )
+    config = MediaMemoryConfig(embeddings=EmbeddingsConfig(provider="mock", dimensions=123))
 
     cli_provider = cli_main._build_embeddings(config)
     mcp_provider = mcp_tools._build_embeddings(config)
