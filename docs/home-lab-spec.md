@@ -5,12 +5,17 @@ Media Memory MCP is currently a local-first MVP scaffold for indexing personal m
 ## Safe defaults
 
 - `mcp.allow_ingest_tools` defaults to `false`, so remote MCP clients cannot trigger ingestion unless the operator opts in.
-- `embeddings.provider` defaults to `mock`, avoiding external network calls and provider credentials.
+- `embeddings.provider` defaults to `mock`, keeping runs local by default and not requiring external provider credentials.
+- `embeddings.provider: openai` is opt-in and uses `OPENAI_API_KEY`; keep `embeddings.provider` at `mock` for CI and local-safe defaults.
+- `embeddings.model` is honored by the OpenAI runtime and remains `mock` in default mode.
 - Embedded subtitle extraction defaults to disabled and never writes into media mounts; extracted files go under the configured `/data` cache when enabled.
 - `app.corpus_id` defaults to `local`, giving future durable records an obvious local corpus boundary.
 - `app.data_dir` defaults to `/data`, matching the expected read-write app data mount.
 - Filesystem media roots are treated as read-only inputs.
 - `index.sqlite_path` defaults to `/data/media-memory.sqlite`, and `index.vector_path` defaults to `/data/vectors` for rebuildable LanceDB vector data.
+- `index.vector_db` currently supports only `lancedb`. Other values fail fast at startup.
+- Search defaults are fixed at this time: `search.lexical_weight` 0.45, `search.vector_weight` 0.45, and `search.metadata_boost_weight` 0.10. Non-default values fail fast.
+- `metadata.fetch_external` must stay `false`; setting `true` fails startup.
 
 The container runtime identity is user `media-memory` with UID/GID `10001:10001`. The host bind mount for `/data` must be writable by this UID/GID so the app can persist databases and vectors.
 

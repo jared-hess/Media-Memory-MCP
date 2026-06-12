@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import hashlib
+import sys
+from types import ModuleType, SimpleNamespace
 from pathlib import Path
 
 from media_memory.core.db import MediaMemoryDB
@@ -90,6 +92,43 @@ def test_openai_provider_requires_key_only_when_configured() -> None:
         assert "api_key" in str(exc)
     else:  # pragma: no cover - defensive assertion
         raise AssertionError("OpenAI provider should require an API key when explicitly configured")
+
+
+def test_openai_provider_uses_configured_model_and_dimensions(monkeypatch) -> None:
+    observed_calls: list[dict[str, object]] = []
+
+    class _FakeOpenAIEmbeddings:
+        def create(self, _calls: list[dict[str, object]] = observed_calls, **kwargs: object) -> SimpleNamespace:
+            _calls.append(kwargs)
+            return SimpleNamespace(
+                data=[
+                    SimpleNamespace(embedding=[0.1, 0.2, 0.3]),
+                    SimpleNamespace(embedding=[0.4, 0.5, 0.6]),
+                ]
+            )
+
+    class FakeOpenAIClient:
+        def __init__(self, *args: object, _embeddings_cls: type = _FakeOpenAIEmbeddings, **kwargs: object) -> None:
+            self.embeddings = _embeddings_cls()
+
+    fake_openai_module = ModuleType("openai")
+    setattr(fake_openai_module, "OpenAI", FakeOpenAIClient)
+    monkeypatch.setitem(sys.modules, "openai", fake_openai_module)
+
+    model = "sentinel-openai-model"
+    dimensions = 3
+    input_texts = ["hello", "world"]
+
+    provider = OpenAIEmbeddingProvider("test-key", model=model, dimensions=dimensions)
+    vectors = provider.embed_texts(input_texts)
+
+    assert len(observed_calls) == 1
+    call_kwargs = observed_calls[0]
+    assert call_kwargs["input"] == input_texts
+    assert call_kwargs["model"] == model
+    assert call_kwargs["encoding_format"] == "float"
+    assert call_kwargs["dimensions"] == dimensions
+    assert vectors == [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
 
 
 def _db_with_chunks(tmp_path: Path) -> MediaMemoryDB:

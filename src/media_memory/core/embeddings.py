@@ -42,7 +42,13 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
 
     MODEL = "text-embedding-3-small"
 
-    def __init__(self, api_key: str | None, *, dimensions: int | None = None) -> None:
+    def __init__(
+        self,
+        api_key: str | None,
+        *,
+        model: str = MODEL,
+        dimensions: int | None = None,
+    ) -> None:
         if not api_key:
             raise EmbeddingProviderConfigError(
                 "OpenAI embeddings require embeddings.api_key when provider is 'openai'."
@@ -50,6 +56,7 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         from openai import OpenAI
 
         self.client = OpenAI(api_key=api_key)
+        self.model = model
         self.dimensions = dimensions
 
     def embed_texts(self, texts: list[str]) -> list[list[float]]:
@@ -58,14 +65,14 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         if self.dimensions:
             response = self.client.embeddings.create(
                 input=texts,
-                model=self.MODEL,
+                model=self.model,
                 encoding_format="float",
                 dimensions=self.dimensions,
             )
         else:
             response = self.client.embeddings.create(
                 input=texts,
-                model=self.MODEL,
+                model=self.model,
                 encoding_format="float",
             )
         return [list(item.embedding) for item in response.data]

@@ -10,6 +10,12 @@ from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _ENV_PATTERN = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
+_SUPPORTED_VECTOR_DB = "lancedb"
+_SUPPORTED_SEARCH_WEIGHTS = {
+    "search.lexical_weight": 0.45,
+    "search.vector_weight": 0.45,
+    "search.metadata_boost_weight": 0.10,
+}
 
 
 class AppConfig(BaseModel):
@@ -166,7 +172,38 @@ def load_config(path: str | Path) -> MediaMemoryConfig:
     with config_path.open("r", encoding="utf-8") as config_file:
         raw_config = yaml.safe_load(config_file) or {}
     expanded_config = _expand_env_placeholders(raw_config)
-    return MediaMemoryConfig.model_validate(expanded_config)
+    config = MediaMemoryConfig.model_validate(expanded_config)
+    validate_supported_runtime_config(config)
+    return config
 
 
-__all__ = ["MediaMemoryConfig", "load_config"]
+def validate_supported_runtime_config(config: MediaMemoryConfig) -> None:
+    """Fail fast for config fields that are not wired to runtime behavior yet."""
+
+    if config.index.vector_db != _SUPPORTED_VECTOR_DB:
+        raise ValueError(
+            f"Unsupported index.vector_db value {config.index.vector_db!r}; "
+            f"only {_SUPPORTED_VECTOR_DB!r} is currently implemented."
+        )
+
+    search_values = {
+        "search.lexical_weight": config.search.lexical_weight,
+        "search.vector_weight": config.search.vector_weight,
+        "search.metadata_boost_weight": config.search.metadata_boost_weight,
+    }
+    for field_name, expected_value in _SUPPORTED_SEARCH_WEIGHTS.items():
+        configured_value = search_values[field_name]
+        if configured_value != expected_value:
+            raise ValueError(
+                f"Unsupported {field_name} value {configured_value!r}; "
+                f"only {expected_value!r} is currently implemented."
+            )
+
+    if config.metadata.fetch_external:
+        raise ValueError(
+            "Unsupported metadata.fetch_external value True; external metadata fetching "
+            "requires an implemented source selection path."
+        )
+
+
+__all__ = ["MediaMemoryConfig", "load_config", "validate_supported_runtime_config"]

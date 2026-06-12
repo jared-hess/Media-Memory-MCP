@@ -6,7 +6,12 @@ from typing import Any
 
 import typer
 
-from media_memory.config import MediaMemoryConfig, load_config
+from media_memory.config import (
+    EmbeddingsConfig,
+    MediaMemoryConfig,
+    load_config,
+    validate_supported_runtime_config,
+)
 from media_memory.core.db import MediaMemoryDB
 from media_memory.core.embeddings import (
     EmbeddingProvider,
@@ -115,6 +120,10 @@ def create_services(
     """Build MCP services from the same local config primitives as the CLI."""
 
     loaded_config = config or _load_config(config_path)
+    try:
+        validate_supported_runtime_config(loaded_config)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
     db = MediaMemoryDB(loaded_config.index.sqlite_path)
     db.init_schema()
     embeddings = _build_embeddings(loaded_config)
@@ -310,11 +319,16 @@ def ingest_library_payload(services: McpServices) -> dict[str, object]:
 
 def _load_config(config_path: Path | str | None) -> MediaMemoryConfig:
     path = Path(config_path) if config_path is not None else DEFAULT_CONFIG_PATH
-    if path.exists():
-        return load_config(path)
-    if path != DEFAULT_CONFIG_PATH and path != DEFAULT_CONFIG_PATH.resolve():
-        raise typer.BadParameter(f"Config file does not exist: {path}")
-    return MediaMemoryConfig()
+    try:
+        if path.exists():
+            return load_config(path)
+        if path != DEFAULT_CONFIG_PATH and path != DEFAULT_CONFIG_PATH.resolve():
+            raise typer.BadParameter(f"Config file does not exist: {path}")
+        loaded_config = MediaMemoryConfig()
+        validate_supported_runtime_config(loaded_config)
+        return loaded_config
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
 
 
 def _build_embeddings(config: MediaMemoryConfig) -> EmbeddingProvider:
@@ -322,10 +336,18 @@ def _build_embeddings(config: MediaMemoryConfig) -> EmbeddingProvider:
         return MockEmbeddingProvider(dims=config.embeddings.dimensions)
     try:
         return OpenAIEmbeddingProvider(
-            config.embeddings.api_key, dimensions=config.embeddings.dimensions
+            config.embeddings.api_key,
+            model=_openai_embedding_model(config),
+            dimensions=config.embeddings.dimensions,
         )
     except EmbeddingProviderConfigError as exc:
         raise typer.BadParameter(str(exc)) from exc
+
+
+def _openai_embedding_model(config: MediaMemoryConfig) -> str:
+    if config.embeddings.model == EmbeddingsConfig().model:
+        return OpenAIEmbeddingProvider.MODEL
+    return config.embeddings.model
 
 
 def _build_vectors(

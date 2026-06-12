@@ -1,3 +1,18 @@
+Metadata-Version: 2.4
+Name: media-memory-mcp
+Version: 0.1.0
+Summary: Local-first MCP server for semantic search over personal media libraries
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: lancedb
+Requires-Dist: mcp
+Requires-Dist: openai
+Requires-Dist: pydantic
+Requires-Dist: pydantic-settings
+Requires-Dist: pysubs2
+Requires-Dist: PyYAML
+Requires-Dist: typer[all]<0.16,>=0.12
+
 # Media-Memory-MCP
 
 Local-first MCP-oriented media search project.
