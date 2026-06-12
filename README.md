@@ -42,6 +42,16 @@ uv run python -c "from media_memory.config import load_config; print(load_config
 
 Environment placeholders such as `${PLEX_TOKEN}`, `${OPENAI_API_KEY}`, `${OPENSUBTITLES_API_KEY}`, `${BAZARR_API_KEY}`, and `${DISCORD_BOT_TOKEN}` are resolved at load time when set, but the examples intentionally contain no credentials and all external providers remain disabled by default. `subtitle_sources.embedded` only invokes `ffprobe`/`ffmpeg` when both `enabled` and `extract_with_ffmpeg` are true, and extracted subtitles are written under `extract_to` rather than beside media files. `subtitle_sources.bazarr` can read subtitles that Bazarr has already placed beside media or under configured read-only roots; Bazarr API calls remain off unless `api_enabled` is explicitly true. The Discord bot stays disabled unless `discord.enabled: true`, a token is configured, and a local REST API URL is provided; its handlers call `/search` rather than core search or database services.
 
+OpenAI embeddings are opt-in. Keep `embeddings.provider: mock` for local-only deployments and CI-friendly behavior, and only set it to `openai` when you want real semantic embeddings. The `OPENAI_API_KEY` placeholder is required only for that OpenAI path. The configured `embeddings.model` is passed through to the OpenAI embedding runtime when enabled; with mock provider the default `mock` model stays in use.
+
+Runtime validation is fail-fast for unsupported values in the current release:
+
+- `index.vector_db` must be `lancedb`.
+- Non-default `search.lexical_weight`, `search.vector_weight`, and `search.metadata_boost_weight` values fail startup.
+- `metadata.fetch_external: true` fails startup.
+
+Contract and vector tests use local fake clients and no live OpenAI network calls, so CI and local unit runs stay self-contained. OpenAI-backed semantic behavior is validated only in opt-in, non-CI test scenarios.
+
 ## Optional Discord bot
 
 `media_memory.discord_bot` provides command handlers for `/episode show query`, `/scene query`, `/quote query`, and `/movie query`. The handlers use the REST `/search` endpoint only, format concise evidence snippets with timestamps when available, and return safe no-result/error messages. Runtime Discord wiring is optional and requires installing `discord.py` yourself; normal tests and local MCP usage do not require a Discord token or package.
