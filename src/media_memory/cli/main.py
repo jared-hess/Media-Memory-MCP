@@ -8,7 +8,12 @@ from typing import Annotated, Generator
 
 import typer
 
-from media_memory.config import MediaMemoryConfig, load_config, validate_supported_runtime_config
+from media_memory.config import (
+    EmbeddingsConfig,
+    MediaMemoryConfig,
+    load_config,
+    validate_supported_runtime_config,
+)
 from media_memory.core.db import MediaMemoryDB, SCHEMA_VERSION
 from media_memory.core.embeddings import (
     EmbeddingProvider,
@@ -58,13 +63,16 @@ def main() -> None:
 
 
 def _load_cli_config(config_path: Path) -> MediaMemoryConfig:
-    if config_path.exists():
-        return load_config(config_path)
-    if config_path != DEFAULT_CONFIG_PATH.resolve() and config_path != DEFAULT_CONFIG_PATH:
-        raise typer.BadParameter(f"Config file does not exist: {config_path}")
-    config = MediaMemoryConfig()
-    validate_supported_runtime_config(config)
-    return config
+    try:
+        if config_path.exists():
+            return load_config(config_path)
+        if config_path != DEFAULT_CONFIG_PATH.resolve() and config_path != DEFAULT_CONFIG_PATH:
+            raise typer.BadParameter(f"Config file does not exist: {config_path}")
+        config = MediaMemoryConfig()
+        validate_supported_runtime_config(config)
+        return config
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
 
 
 def _db_path(config: MediaMemoryConfig) -> Path:
@@ -77,11 +85,17 @@ def _build_embeddings(config: MediaMemoryConfig) -> EmbeddingProvider:
     try:
         return OpenAIEmbeddingProvider(
             config.embeddings.api_key,
-            model=config.embeddings.model,
+            model=_openai_embedding_model(config),
             dimensions=config.embeddings.dimensions,
         )
     except EmbeddingProviderConfigError as exc:
         raise typer.BadParameter(str(exc)) from exc
+
+
+def _openai_embedding_model(config: MediaMemoryConfig) -> str:
+    if config.embeddings.model == EmbeddingsConfig().model:
+        return OpenAIEmbeddingProvider.MODEL
+    return config.embeddings.model
 
 
 def _build_vectors(

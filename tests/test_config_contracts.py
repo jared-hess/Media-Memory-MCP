@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 import pytest
+import typer
 
 from media_memory import config as config_module
 from media_memory.config import (
@@ -255,6 +256,7 @@ def test_config_contract_matrix_has_unique_fields() -> None:
 
 
 class _FakeOpenAIEmbeddingProvider:
+    MODEL = "fake-openai-default-model"
     calls: list[dict[str, object]] = []
 
     def __init__(
@@ -272,6 +274,16 @@ def _sentinel_openai_config() -> MediaMemoryConfig:
         embeddings=EmbeddingsConfig(
             provider="openai",
             model="sentinel-openai-model",
+            api_key="sentinel-api-key",
+            dimensions=123,
+        )
+    )
+
+
+def _default_model_openai_config() -> MediaMemoryConfig:
+    return MediaMemoryConfig(
+        embeddings=EmbeddingsConfig(
+            provider="openai",
             api_key="sentinel-api-key",
             dimensions=123,
         )
@@ -310,6 +322,42 @@ def test_mcp_openai_embedding_factory_receives_configured_values(monkeypatch) ->
         {
             "api_key": "sentinel-api-key",
             "model": "sentinel-openai-model",
+            "dimensions": 123,
+        }
+    ]
+
+
+def test_cli_openai_embedding_factory_uses_provider_default_for_config_default(
+    monkeypatch,
+) -> None:
+    _FakeOpenAIEmbeddingProvider.calls = []
+    monkeypatch.setattr(cli_main, "OpenAIEmbeddingProvider", _FakeOpenAIEmbeddingProvider)
+
+    provider = cli_main._build_embeddings(_default_model_openai_config())
+
+    assert isinstance(provider, _FakeOpenAIEmbeddingProvider)
+    assert _FakeOpenAIEmbeddingProvider.calls == [
+        {
+            "api_key": "sentinel-api-key",
+            "model": _FakeOpenAIEmbeddingProvider.MODEL,
+            "dimensions": 123,
+        }
+    ]
+
+
+def test_mcp_openai_embedding_factory_uses_provider_default_for_config_default(
+    monkeypatch,
+) -> None:
+    _FakeOpenAIEmbeddingProvider.calls = []
+    monkeypatch.setattr(mcp_tools, "OpenAIEmbeddingProvider", _FakeOpenAIEmbeddingProvider)
+
+    provider = mcp_tools._build_embeddings(_default_model_openai_config())
+
+    assert isinstance(provider, _FakeOpenAIEmbeddingProvider)
+    assert _FakeOpenAIEmbeddingProvider.calls == [
+        {
+            "api_key": "sentinel-api-key",
+            "model": _FakeOpenAIEmbeddingProvider.MODEL,
             "dimensions": 123,
         }
     ]
@@ -387,3 +435,26 @@ index:
 
     with pytest.raises(ValueError, match="index\\.vector_db.*disabled"):
         load_config(config_path)
+
+
+def test_cli_config_loader_maps_runtime_validation_to_bad_parameter(tmp_path) -> None:
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text("index:\n  vector_db: disabled\n", encoding="utf-8")
+
+    with pytest.raises(typer.BadParameter, match="index\\.vector_db.*disabled"):
+        cli_main._load_cli_config(config_path)
+
+
+def test_mcp_config_loader_maps_runtime_validation_to_bad_parameter(tmp_path) -> None:
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text("index:\n  vector_db: disabled\n", encoding="utf-8")
+
+    with pytest.raises(typer.BadParameter, match="index\\.vector_db.*disabled"):
+        mcp_tools._load_config(config_path)
+
+
+def test_mcp_create_services_maps_runtime_validation_to_bad_parameter() -> None:
+    config = MediaMemoryConfig(index=IndexConfig(vector_db="disabled"))
+
+    with pytest.raises(typer.BadParameter, match="index\\.vector_db.*disabled"):
+        mcp_tools.create_services(config=config)
